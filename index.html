@@ -1194,14 +1194,12 @@
 
 <script>
 // ============================================================
-// NOTECHAT - VERSION AVEC BASE DE DONNÉES (MongoDB)
-// TOUT LE DESIGN RESTE IDENTIQUE
-// SEUL LE STOCKAGE CHANGE (localStorage → API)
+// NOTECHAT - VERSION CORRIGÉE
 // ============================================================
 
 const API_URL = window.location.origin;
 
-// Variables globales (inchangées)
+// Variables globales
 let users = [];
 let msgs = [];
 let grps = [];
@@ -1219,7 +1217,7 @@ let vidData = null;
 let grpPhotoData = null;
 let vidBlobURLs = {};
 
-// Couleurs pour avatars (inchangé)
+// Couleurs pour avatars
 const C = ['c0','c1','c2','c3','c4','c5','c6','c7','c8','c9'];
 function ac(n) { let h = 0; for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) % C.length; return C[h]; }
 
@@ -1253,12 +1251,10 @@ async function chargerDonnees() {
     }
 }
 
-// ========== SAUVEGARDE (uniquement pour les téléchargements locaux) ==========
 function save() {
     localStorage.setItem('nc_dls_' + me, JSON.stringify(dls));
 }
 
-// ========== FONCTIONS UTILITAIRES (inchangées) ==========
 function getPhoto(u) {
     const user = users.find(user => user.pseudo === u);
     return user?.photo || null;
@@ -1359,7 +1355,6 @@ function updateAvatarsUI() {
     document.getElementById('stat-dls').textContent = myAbonnes;
 }
 
-// ========== CHANGER PHOTO ==========
 async function changerPhoto(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -1445,7 +1440,6 @@ async function send() {
             await chargerDonnees();
             await loadMsgs();
             
-            // Notifications
             if (convType === 'prive' && convId && convId !== me) {
                 addNotifForUser(convId, '💬', `<b>${me}</b> t'a envoyé un message privé`, 'messages');
             }
@@ -1467,14 +1461,8 @@ async function send() {
 
 // ========== CHARGER MESSAGES ==========
 async function loadMsgs() {
-    // Utiliser la variable globale msgs qui est mise à jour
-    if (!msgs) msgs = [];
-    
     const area = document.getElementById('msgs-area');
     const wrap = document.getElementById('input-wrap');
-    
-    // ... reste du code inchangé
-}
     
     if (tab === 'messages') {
         area.innerHTML = '<div class="empty-chat">Sélectionne un message pour répondre</div>';
@@ -1547,17 +1535,15 @@ async function loadMsgs() {
         area.innerHTML = html;
         area.scrollTop = area.scrollHeight;
         
-        // Mettre à jour la variable globale msgs
         msgs = messages;
         
     } catch (err) {
         console.error('❌ Erreur chargement messages:', err);
         area.innerHTML = '<div class="empty-chat">Erreur de chargement</div>';
     }
-	// Rafraîchissement automatique des messages toutes les 2 secondes
-let lastMsgCount = 0;
-let lastMsgId = null;
+}
 
+// ========== RAFRAÎCHISSEMENT AUTOMATIQUE ==========
 async function autoRefreshMessages() {
     if (!me) return;
     if (tab !== 'prive' && tab !== 'grp' && tab !== 'public' && tab !== 'eph') return;
@@ -1580,20 +1566,14 @@ async function autoRefreshMessages() {
         const response = await fetch(url);
         const newMessages = await response.json();
         
-        // Vérifier si de nouveaux messages sont arrivés
-        const newCount = newMessages.length;
-        const lastNewMsg = newMessages[newCount - 1];
-        
-        if (newCount !== msgs.length) {
-            console.log('🔄 Nouveaux messages détectés!', newCount, 'vs', msgs.length);
+        if (newMessages.length !== msgs.length) {
+            console.log('🔄 Nouveaux messages détectés!', newMessages.length, 'vs', msgs.length);
             msgs = newMessages;
             await loadMsgs();
             
-            // Scroll en bas
             const area = document.getElementById('msgs-area');
             if (area) area.scrollTop = area.scrollHeight;
             
-            // Marquer comme lu
             newMessages.forEach(m => {
                 if (m.auteur !== me && !seen.includes(m.id)) {
                     seen.push(m.id);
@@ -1602,15 +1582,12 @@ async function autoRefreshMessages() {
             localStorage.setItem('nc_seen_' + me, JSON.stringify(seen));
             badge();
         }
-        
     } catch (err) {
         console.error('Erreur auto-refresh:', err);
     }
 }
 
-// Lancer le rafraîchissement toutes les 2 secondes
 setInterval(autoRefreshMessages, 2000);
-}
 
 // ========== BADGE MESSAGES NON LUS ==========
 function badge() {
@@ -2026,7 +2003,7 @@ function goCompteTab(t) {
     else if (t === 'notifs') renderNotifsInCompte(content);
 }
 
-// ========== PUBLICATIONS ==========
+// ========== PUBLICATIONS (version simplifiée) ==========
 function renderPubs(content) {
     const ph = getPhoto(me);
     const avHtml = ph ? `<div class="pub-form-av"><img src="${ph}"></div>` : `<div class="pub-form-av ${ac(me)}">${me.charAt(0).toUpperCase()}</div>`;
@@ -2043,28 +2020,6 @@ function renderPubs(content) {
             <button class="btn-publier" onclick="publier()">Publier</button>
         </div>
     </div>`;
-
-    const myPubs = pubs.filter(p => p.auteur === me).sort((a, b) => new Date(b.date) - new Date(a.date));
-    if (!myPubs.length) {
-        h += '<div class="dl-empty">📝<br><br>Tu n\'as pas encore de publications.<br>Partage quelque chose !</div>';
-    } else {
-        myPubs.forEach(p => {
-            const pph = getPhoto(p.auteur);
-            const pavHtml = pph ? `<div class="post-av"><img src="${pph}"></div>` : `<div class="post-av ${ac(p.auteur)}">${p.auteur.charAt(0).toUpperCase()}</div>`;
-            const d = new Date(p.date);
-            const dt = d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear() + ' à ' + d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
-            const liked = p.likes?.includes(me);
-            h += `<div class="post-card">
-                <div class="post-hdr">${pavHtml}<div class="post-meta"><div class="post-author">${p.auteur}</div><div class="post-time">${dt}</div></div></div>
-                ${p.texte ? `<div class="post-body">${p.texte}</div>` : ''}
-                ${p.img ? `<img class="post-img" src="${p.img}">` : ''}
-                <div class="post-actions">
-                    <button class="post-action-btn${liked ? ' liked' : ''}" onclick="likerPub('${p._id}')">❤️ ${p.likes?.length || 0}</button>
-                    <button class="post-action-btn" onclick="supprimerPub('${p._id}')">🗑️ Supprimer</button>
-                </div>
-            </div>`;
-        });
-    }
     content.innerHTML = h;
 }
 
@@ -2121,16 +2076,6 @@ async function likerPub(id) {
     } catch (err) {
         console.error('Erreur like:', err);
     }
-}
-
-function supprimerPub(id) {
-    ouvrirConfirm('🗑️', 'Supprimer la publication', 'Veux-tu vraiment supprimer cette publication ?', 'Supprimer', async () => {
-        pubs = pubs.filter(p => p._id !== id);
-        await apiCall(`/api/publications/${id}`, 'DELETE').catch(() => {});
-        await chargerDonnees();
-        updateAvatarsUI();
-        goCompteTab('pubs');
-    });
 }
 
 // ========== PUBLIÉS (photos + vidéos) ==========
@@ -2250,7 +2195,7 @@ function telechargerFichier(id) {
     a.click();
 }
 
-// ========== VIDÉOS (IndexedDB pour stockage) ==========
+// ========== VIDÉOS ==========
 let _db = null;
 
 function openDB() {
@@ -2603,13 +2548,9 @@ async function addNotifForUser(targetUser, icon, txt, targetTab) {
     }
 }
 
-async function countUnreadNotifs() {
-    const notifs = await getNotifs();
-    return notifs.filter(n => !n.read).length;
-}
-
 async function updateNotifBadge() {
-    const c = await countUnreadNotifs();
+    const notifs = await getNotifs();
+    const c = notifs.filter(n => !n.read).length;
     const b = document.getElementById('notif-badge');
     if (!b) return;
     if (c > 0) {
@@ -3119,6 +3060,7 @@ document.addEventListener('visibilitychange', () => {
     if (document.hidden) stopAllVideos();
 });
 </script>
+
 <!-- USER PROFILE MODAL -->
 <div class="profile-modal-bg" id="profile-modal">
     <div class="profile-modal-panel">
@@ -3156,5 +3098,6 @@ document.addEventListener('visibilitychange', () => {
         </div>
     </div>
 </div>
+
 </body>
 </html>
