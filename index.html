@@ -1428,31 +1428,46 @@ async function send() {
         exp: tab === 'eph' ? Date.now() + 86400000 : null
     };
     
+    console.log('📤 Envoi message:', message);
+    
     try {
-        await apiCall('/api/messages', 'POST', message);
-        await chargerDonnees();
-        loadMsgs();
-        document.getElementById('minp').value = '';
+        const response = await fetch('/api/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(message)
+        });
         
-        // Notifications
-        if (convType === 'prive' && convId && convId !== me) {
-            addNotifForUser(convId, '💬', `<b>${me}</b> t'a envoyé un message privé`, 'messages');
-        }
-        if (convType === 'grp' && convId) {
-            const groupe = grps.find(g => g._id === convId);
-            if (groupe) {
-                groupe.membres.filter(m2 => m2 !== me).forEach(m2 => {
-                    addNotifForUser(m2, '👥', `<b>${me}</b> a écrit dans le groupe <b>${groupe.nom}</b>`, 'grp');
-                });
+        const result = await response.json();
+        console.log('✅ Réponse serveur:', result);
+        
+        if (result.success || result.id) {
+            document.getElementById('minp').value = '';
+            await chargerDonnees();
+            await loadMsgs();
+            
+            // Notifications
+            if (convType === 'prive' && convId && convId !== me) {
+                addNotifForUser(convId, '💬', `<b>${me}</b> t'a envoyé un message privé`, 'messages');
             }
+            if (convType === 'grp' && convId) {
+                const groupe = grps.find(g => g._id === convId);
+                if (groupe) {
+                    groupe.membres.filter(m2 => m2 !== me).forEach(m2 => {
+                        addNotifForUser(m2, '👥', `<b>${me}</b> a écrit dans le groupe <b>${groupe.nom}</b>`, 'grp');
+                    });
+                }
+            }
+        } else {
+            console.error('❌ Erreur envoi:', result);
         }
     } catch (err) {
-        console.error('Erreur envoi:', err);
+        console.error('❌ Erreur réseau:', err);
     }
 }
 
 // ========== CHARGER MESSAGES ==========
 async function loadMsgs() {
+    console.log('🔄 Chargement des messages pour:', convType, convId);
     const area = document.getElementById('msgs-area');
     const wrap = document.getElementById('input-wrap');
     
