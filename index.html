@@ -1,0 +1,3056 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoteChat</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            height: 100%; width: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            overflow: hidden; background: #f0f2f5;
+        }
+
+        /* ===== LOGIN ===== */
+        #page-login {
+            width: 100vw; height: 100vh; background: #f0f2f5;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .login-card {
+            background: #fff; border-radius: 16px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.12);
+            padding: 40px 36px; width: 400px; max-width: 90vw; text-align: center;
+        }
+        .login-card .logo { font-size: 32px; font-weight: 800; color: #0084ff; margin-bottom: 8px; }
+        .login-card .tagline { font-size: 15px; color: #65676b; margin-bottom: 28px; }
+        .login-card input {
+            width: 100%; padding: 13px 16px; margin-bottom: 12px;
+            background: #f0f2f5; border: none; border-radius: 10px;
+            font-size: 16px; color: #050505; font-family: inherit; text-align: left;
+        }
+        .login-card input:focus { outline: 2px solid #0084ff; }
+        .login-card input::placeholder { color: #8a8d91; }
+        .btn-login {
+            width: 100%; padding: 13px; background: #0084ff; color: #fff;
+            border: none; border-radius: 10px; font-size: 16px; font-weight: 700;
+            cursor: pointer; font-family: inherit; margin-bottom: 12px; transition: background 0.15s;
+        }
+        .btn-login:hover { background: #006ccd; }
+        .login-hint { font-size: 13px; color: #8a8d91; }
+        .login-error {
+            background: #fff0f0; color: #d00; border-radius: 8px;
+            padding: 10px 14px; font-size: 14px; margin-bottom: 12px; display: none;
+        }
+
+        /* ===== APP ===== */
+        #page-app { display: none; width: 100vw; height: 100vh; }
+        .app { display: flex; width: 100%; height: 100%; background: #fff; }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: 300px; min-width: 300px; max-width: 300px;
+            height: 100vh; background: #fff;
+            border-right: 1px solid #e4e6ea;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+
+        .sb-top { padding: 16px 16px 14px; border-bottom: 1px solid #e4e6ea; flex-shrink: 0; }
+        .sb-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .sb-title { font-size: 22px; font-weight: 700; color: #050505; }
+        .btn-logout {
+            background: none; border: none; color: #8a8d91;
+            font-size: 13px; cursor: pointer; padding: 4px 8px; border-radius: 6px; font-family: inherit;
+        }
+        .btn-logout:hover { background: #f0f2f5; color: #050505; }
+
+        .user-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: #f0f2f5; }
+        .uav {
+            width: 34px; height: 34px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 14px; color: #fff; flex-shrink: 0;
+            overflow: hidden;
+        }
+        .uav img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .uav-name { font-weight: 600; font-size: 14px; color: #050505; }
+        .uav-status { font-size: 12px; color: #00c851; }
+
+        /* ===== NAV TABS ===== */
+        .nav-tabs {
+            padding: 10px 10px; border-bottom: 1px solid #e4e6ea;
+            display: flex; flex-direction: column; gap: 2px; flex-shrink: 0;
+        }
+        .nav-tab {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 12px; border-radius: 10px;
+            cursor: pointer; border: none; font-family: inherit;
+            background: transparent; width: 100%; text-align: left;
+            transition: background 0.15s; position: relative;
+        }
+        .nav-tab:hover { background: #f0f2f5; }
+        .nav-tab .tab-icon {
+            width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; flex-shrink: 0; background: #f0f2f5; transition: background 0.15s;
+        }
+        .nav-tab .tab-label { font-size: 15px; font-weight: 500; color: #050505; }
+
+        .nav-tab.t-public.active  .tab-icon { background: #0084ff; }
+        .nav-tab.t-msg.active     .tab-icon { background: #f02849; }
+        .nav-tab.t-prive.active   .tab-icon { background: #00c851; }
+        .nav-tab.t-eph.active     .tab-icon { background: #7b68ee; }
+        .nav-tab.t-grp.active     .tab-icon { background: #f7b731; }
+        .nav-tab.t-compte.active  .tab-icon { background: #ff6348; }
+
+        .nav-tab.active .tab-label { font-weight: 700; }
+        .nav-tab.t-public.active  .tab-label { color: #0084ff; }
+        .nav-tab.t-msg.active     .tab-label { color: #f02849; }
+        .nav-tab.t-prive.active   .tab-label { color: #00c851; }
+        .nav-tab.t-eph.active     .tab-label { color: #7b68ee; }
+        .nav-tab.t-grp.active     .tab-label { color: #f7b731; }
+        .nav-tab.t-compte.active  .tab-label { color: #ff6348; }
+
+        .tab-badge {
+            position: absolute; top: 6px; left: 34px;
+            background: #f02849; color: #fff; border-radius: 10px;
+            font-size: 11px; font-weight: 700; min-width: 18px; height: 18px;
+            display: none; align-items: center; justify-content: center;
+            padding: 0 4px; border: 2px solid #fff;
+        }
+
+        /* Search */
+        .search-wrap { padding: 10px 16px; flex-shrink: 0; position: relative; }
+        .search-wrap input {
+            width: 100%; padding: 9px 14px; background: #f0f2f5; border: none;
+            border-radius: 20px; font-size: 15px; color: #050505; font-family: inherit;
+        }
+        .search-wrap input:focus { outline: 2px solid #0084ff; }
+        .search-wrap input::placeholder { color: #8a8d91; }
+        .sdrop {
+            position: absolute; left: 16px; right: 16px; top: 54px;
+            background: #fff; border: 1px solid #e4e6ea; border-radius: 10px;
+            z-index: 200; display: none; overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+        .sdrop-item { padding: 10px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; }
+        .sdrop-item:hover { background: #f0f2f5; }
+
+        /* Conv list */
+        .conv-list { flex: 1; overflow-y: auto; padding: 4px 8px; }
+        .conv-list::-webkit-scrollbar { width: 4px; }
+        .conv-list::-webkit-scrollbar-thumb { background: #e4e6ea; border-radius: 4px; }
+
+        .sec-lbl {
+            font-size: 12px; font-weight: 700; color: #8a8d91;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            padding: 10px 8px 6px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .add-btn {
+            width: 24px; height: 24px; border-radius: 50%;
+            background: #0084ff; color: #fff; font-size: 20px; font-weight: 300; line-height: 1;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .add-btn:hover { background: #006ccd; }
+
+        .conv-item { display: flex; align-items: center; gap: 10px; padding: 8px 8px; border-radius: 10px; cursor: pointer; transition: background 0.1s; }
+        .conv-item:hover { background: #f0f2f5; }
+        .conv-item.active { background: #e8f4ff; }
+
+        .cav {
+            width: 46px; height: 46px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 18px; color: #fff; flex-shrink: 0; position: relative;
+        }
+        .online-ring { width: 13px; height: 13px; background: #00c851; border-radius: 50%; border: 2px solid #fff; position: absolute; bottom: 1px; right: 1px; }
+        .cinfo { flex: 1; min-width: 0; }
+        .cname { font-size: 15px; font-weight: 600; color: #050505; display: flex; justify-content: space-between; align-items: center; }
+        .ctime { font-size: 12px; color: #8a8d91; font-weight: 400; }
+        .cprev { font-size: 13px; color: #65676b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; justify-content: space-between; }
+        .cprev.unread { color: #050505; font-weight: 700; }
+        .udot { width: 10px; height: 10px; background: #0084ff; border-radius: 50%; flex-shrink: 0; }
+        .empty-hint { text-align: center; color: #8a8d91; font-size: 14px; padding: 30px 16px; line-height: 1.6; }
+
+        /* ===== MAIN CHAT AREA ===== */
+        .chat-area { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: #fff; }
+        .chat-hdr { padding: 12px 20px; border-bottom: 1px solid #e4e6ea; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+        .hdr-av { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; color: #fff; flex-shrink: 0; overflow: hidden; }
+        .hdr-av img { width: 100%; height: 100%; object-fit: cover; }
+        .hdr-name { font-size: 15px; font-weight: 700; color: #050505; }
+        .hdr-sub  { font-size: 12px; color: #65676b; }
+        .hdr-members { font-size: 12px; color: #8a8d91; }
+
+        .msgs-area { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 2px; }
+        .msgs-area::-webkit-scrollbar { width: 4px; }
+        .msgs-area::-webkit-scrollbar-thumb { background: #e4e6ea; border-radius: 4px; }
+
+        .msg-grp { display: flex; align-items: flex-end; gap: 8px; margin-bottom: 2px; }
+        .msg-grp.me { flex-direction: row-reverse; }
+        .msg-av { width: 28px; height: 28px; border-radius: 50%; font-weight: 700; font-size: 11px; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
+        .msg-av img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .msg-stack { display: flex; flex-direction: column; gap: 2px; max-width: 60%; }
+        .msg-grp.me .msg-stack { align-items: flex-end; }
+        .msg-author-lbl { font-size: 11px; color: #8a8d91; margin-bottom: 2px; padding-left: 12px; }
+        .bubble { background: #f0f2f5; color: #050505; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.45; word-break: break-word; }
+        .msg-grp.me .bubble { background: #0084ff; color: #fff; }
+        .btime { font-size: 11px; color: #8a8d91; padding: 2px 12px; }
+        .empty-chat { text-align: center; color: #8a8d91; font-size: 15px; margin: auto; }
+
+        .input-wrap { flex-shrink: 0; }
+        .msg-lbl { font-size: 12px; color: #8a8d91; text-align: center; padding: 4px 0 2px; }
+        .input-bar { padding: 10px 20px 14px; border-top: 1px solid #e4e6ea; display: flex; align-items: center; gap: 8px; position: relative; }
+        .input-bar input { flex: 1; padding: 10px 16px; background: #f0f2f5; border: none; border-radius: 22px; font-size: 15px; color: #050505; font-family: inherit; }
+        .input-bar input:focus { outline: 2px solid #0084ff; }
+        .input-bar input::placeholder { color: #8a8d91; }
+        .send-btn { width: 38px; height: 38px; border-radius: 50%; background: #0084ff; color: #fff; border: none; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
+        .send-btn:hover { background: #006ccd; }
+
+        /* Voice button */
+        .voice-btn {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: none; border: none; font-size: 20px;
+            cursor: pointer; display: flex; align-items: center;
+            justify-content: center; flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .voice-btn:hover { transform: scale(1.15); }
+        .voice-btn.recording {
+            background: #f02849;
+            animation: voicePulse 1s infinite;
+            font-size: 16px;
+        }
+        @keyframes voicePulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(240,40,73,0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(240,40,73,0); }
+        }
+
+        /* Voice message bubble */
+        .voice-bubble {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 12px; background: #f0f2f5;
+            border-radius: 18px; cursor: pointer;
+            min-width: 160px;
+        }
+        .msg-grp.me .voice-bubble { background: #0084ff; }
+        .voice-bubble audio { display: none; }
+        .voice-play-btn {
+            width: 30px; height: 30px; border-radius: 50%;
+            background: #0084ff; color: #fff; border: none;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; cursor: pointer; flex-shrink: 0;
+        }
+        .msg-grp.me .voice-play-btn { background: #fff; color: #0084ff; }
+        .voice-waveform {
+            flex: 1; height: 24px; display: flex; align-items: center; gap: 2px;
+        }
+        .voice-bar {
+            width: 3px; border-radius: 2px;
+            background: #8a8d91; flex-shrink: 0;
+            transition: height 0.1s;
+        }
+        .msg-grp.me .voice-bar { background: rgba(255,255,255,0.7); }
+        .voice-duration { font-size: 12px; color: #65676b; white-space: nowrap; }
+        .msg-grp.me .voice-duration { color: rgba(255,255,255,0.8); }
+
+        /* Emoji button */
+        .emoji-btn {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: none; border: none; font-size: 22px;
+            cursor: pointer; display: flex; align-items: center;
+            justify-content: center; flex-shrink: 0; transition: transform 0.15s;
+        }
+        .emoji-btn:hover { transform: scale(1.2); }
+
+        /* Emoji picker panel */
+        .emoji-picker {
+            display: none;
+            position: absolute;
+            bottom: 70px; left: 20px;
+            background: #fff;
+            border: 1px solid #e4e6ea;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            padding: 10px;
+            width: 300px;
+            z-index: 500;
+        }
+        .emoji-picker.open { display: block; }
+        .emoji-cats {
+            display: flex; gap: 4px; margin-bottom: 8px;
+            border-bottom: 1px solid #e4e6ea; padding-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        .emoji-cat-btn {
+            padding: 4px 8px; border: none; background: none;
+            font-size: 18px; cursor: pointer; border-radius: 6px;
+            transition: background 0.1s;
+        }
+        .emoji-cat-btn:hover, .emoji-cat-btn.active { background: #f0f2f5; }
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 2px;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .emoji-grid::-webkit-scrollbar { width: 4px; }
+        .emoji-grid::-webkit-scrollbar-thumb { background: #e4e6ea; border-radius: 4px; }
+        .emoji-item {
+            font-size: 22px; padding: 4px; text-align: center;
+            cursor: pointer; border-radius: 6px; transition: background 0.1s;
+            line-height: 1.3;
+        }
+        .emoji-item:hover { background: #f0f2f5; }
+
+        /* ===== COMPTE PAGE ===== */
+        .compte-area {
+            flex: 1; display: none; flex-direction: column;
+            height: 100vh; overflow: hidden; background: #f0f2f5;
+        }
+        .compte-area.active { display: flex; }
+
+        /* Compte header - profile banner */
+        .compte-hdr {
+            background: #fff; border-bottom: 1px solid #e4e6ea;
+            padding: 24px 28px; flex-shrink: 0;
+            display: flex; align-items: center; gap: 20px;
+        }
+        .profile-av-wrap {
+            position: relative; cursor: pointer;
+        }
+        .profile-av {
+            width: 80px; height: 80px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 30px; color: #fff;
+            border: 3px solid #e4e6ea; overflow: hidden; flex-shrink: 0;
+        }
+        .profile-av img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .profile-av-edit {
+            position: absolute; bottom: 2px; right: 2px;
+            width: 26px; height: 26px; border-radius: 50%;
+            background: #0084ff; border: 2px solid #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; cursor: pointer;
+        }
+        #photo-input { display: none; }
+        .profile-info { flex: 1; }
+        .profile-name { font-size: 22px; font-weight: 700; color: #050505; }
+        .profile-status { font-size: 14px; color: #00c851; margin-top: 2px; }
+        .profile-stats { display: flex; gap: 24px; margin-top: 10px; }
+        .stat-item { text-align: center; }
+        .stat-num { font-size: 18px; font-weight: 700; color: #050505; }
+        .stat-lbl { font-size: 12px; color: #8a8d91; }
+
+        /* Compte inner tabs */
+        .compte-tabs {
+            background: #fff; border-bottom: 1px solid #e4e6ea;
+            display: flex; flex-shrink: 0;
+        }
+        .compte-tab {
+            flex: 1; padding: 14px; text-align: center;
+            font-size: 14px; font-weight: 600; color: #65676b;
+            cursor: pointer; border: none; background: none; font-family: inherit;
+            border-bottom: 3px solid transparent; transition: all 0.15s;
+        }
+        .compte-tab:hover { color: #050505; background: #f0f2f5; }
+        .compte-tab.active { color: #0084ff; border-bottom-color: #0084ff; }
+
+        /* Compte content */
+        .compte-content { flex: 1; overflow-y: auto; padding: 20px 28px; }
+        .compte-content::-webkit-scrollbar { width: 4px; }
+        .compte-content::-webkit-scrollbar-thumb { background: #e4e6ea; border-radius: 4px; }
+
+        /* Publication form */
+        .pub-form {
+            background: #fff; border-radius: 12px; border: 1px solid #e4e6ea;
+            padding: 16px; margin-bottom: 16px;
+        }
+        .pub-form-top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .pub-form-av { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; color: #fff; flex-shrink: 0; overflow: hidden; }
+        .pub-form-av img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .pub-form textarea {
+            width: 100%; border: none; background: #f0f2f5; border-radius: 10px;
+            padding: 10px 14px; font-size: 15px; font-family: inherit; color: #050505;
+            resize: none; min-height: 80px;
+        }
+        .pub-form textarea:focus { outline: 2px solid #0084ff; }
+        .pub-form textarea::placeholder { color: #8a8d91; }
+        .pub-form-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+        .pub-form-actions { display: flex; gap: 8px; }
+        .pub-img-btn {
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px 12px; border-radius: 8px; background: #f0f2f5;
+            border: none; font-size: 14px; font-weight: 500; color: #050505;
+            cursor: pointer; font-family: inherit;
+        }
+        .pub-img-btn:hover { background: #e4e6ea; }
+        #pub-img-input { display: none; }
+        .pub-preview { margin-top: 10px; display: none; }
+        .pub-preview img { max-width: 100%; border-radius: 10px; max-height: 200px; object-fit: cover; }
+        .pub-preview-rm { font-size: 12px; color: #f02849; cursor: pointer; margin-top: 4px; }
+        .btn-publier {
+            padding: 8px 18px; background: #0084ff; color: #fff;
+            border: none; border-radius: 8px; font-size: 14px; font-weight: 700;
+            cursor: pointer; font-family: inherit;
+        }
+        .btn-publier:hover { background: #006ccd; }
+
+        /* Post card */
+        .post-card {
+            background: #fff; border-radius: 12px; border: 1px solid #e4e6ea;
+            margin-bottom: 14px; overflow: hidden;
+        }
+        .post-hdr { display: flex; align-items: center; gap: 10px; padding: 14px 16px 10px; }
+        .post-av { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; color: #fff; flex-shrink: 0; overflow: hidden; }
+        .post-av img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .post-meta { flex: 1; }
+        .post-author { font-size: 14px; font-weight: 700; color: #050505; }
+        .post-time { font-size: 12px; color: #8a8d91; }
+        .post-body { padding: 0 16px 12px; font-size: 15px; color: #050505; line-height: 1.5; }
+        .post-img { width: 100%; max-height: 320px; object-fit: cover; display: block; }
+        .post-actions { display: flex; gap: 0; border-top: 1px solid #e4e6ea; }
+        .post-action-btn {
+            flex: 1; padding: 10px; background: none; border: none;
+            font-size: 14px; font-weight: 600; color: #65676b;
+            cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 6px;
+            transition: background 0.1s;
+        }
+        .post-action-btn:hover { background: #f0f2f5; }
+        .post-action-btn.liked { color: #f02849; }
+
+        /* Download tab */
+        .dl-empty { text-align: center; color: #8a8d91; padding: 40px 20px; font-size: 14px; line-height: 1.7; }
+        .dl-card {
+            background: #fff; border-radius: 12px; border: 1px solid #e4e6ea;
+            padding: 14px 16px; margin-bottom: 12px;
+            display: flex; align-items: center; gap: 14px;
+        }
+        .dl-icon { font-size: 28px; flex-shrink: 0; }
+        .dl-info { flex: 1; min-width: 0; }
+        .dl-name { font-size: 14px; font-weight: 600; color: #050505; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .dl-meta { font-size: 12px; color: #8a8d91; margin-top: 2px; }
+        .dl-btn {
+            padding: 7px 14px; background: #0084ff; color: #fff;
+            border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+            cursor: pointer; font-family: inherit; flex-shrink: 0;
+        }
+        .dl-btn:hover { background: #006ccd; }
+        .dl-upload-zone {
+            border: 2px dashed #e4e6ea; border-radius: 12px;
+            padding: 30px; text-align: center; cursor: pointer;
+            margin-bottom: 16px; transition: border-color 0.15s;
+        }
+        .dl-upload-zone:hover { border-color: #0084ff; }
+        .dl-upload-zone p { color: #65676b; font-size: 14px; margin-top: 8px; }
+        #dl-file-input { display: none; }
+
+        /* ===== VIDEO AREA — TikTok web style ===== */
+        .video-area {
+            flex: 1; display: none; flex-direction: column;
+            height: 100vh; overflow: hidden; background: #f5f0e8;
+        }
+        .video-area.active { display: flex; }
+
+        /* Top bar */
+        .video-topbar {
+            background: #f5f0e8; border-bottom: 1px solid #e8e0d0;
+            padding: 12px 20px; display: flex; align-items: center;
+            justify-content: center; flex-shrink: 0;
+        }
+        .video-topbar h2 { font-size: 16px; font-weight: 700; color: #050505; }
+
+        /* Scroll container */
+        .video-feed {
+            flex: 1; overflow-y: scroll; overflow-x: hidden;
+            scroll-snap-type: y mandatory;
+            display: flex; flex-direction: column;
+            align-items: center;
+            background: #f5f0e8;
+        }
+        .video-feed::-webkit-scrollbar { display: none; }
+        .video-feed { scroll-behavior: smooth; }
+
+        /* Each video slot — centered */
+        .vid-item {
+            width: 100%;
+            height: calc(100vh - 49px);
+            scroll-snap-align: start;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: #f5f0e8;
+        }
+
+        /* Big portrait card */
+        .vid-inner {
+            position: relative;
+            height: 96%;
+            max-height: 760px;
+            width: 100%;
+            max-width: 480px;
+            background: #000;
+            border-radius: 14px;
+            overflow: visible;
+            flex-shrink: 0;
+        }
+
+        .vid-inner video {
+            width: 100%; height: 100%;
+            object-fit: cover; display: block;
+            border-radius: 14px;
+        }
+
+        /* Play button overlay */
+        .vid-play-overlay {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.25);
+            border-radius: 14px; cursor: pointer; z-index: 3;
+            transition: opacity 0.2s;
+        }
+        .vid-play-overlay.hidden { display: none; }
+        .vid-play-btn {
+            width: 64px; height: 64px; border-radius: 50%;
+            background: rgba(255,255,255,0.9);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px; padding-left: 4px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        /* Bottom overlay: author + title */
+        .vid-overlay-bottom {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 14px 12px 16px;
+            background: linear-gradient(to top, rgba(0,0,0,0.82) 0%, transparent 100%);
+            pointer-events: none;
+            border-radius: 0 0 14px 14px;
+        }
+        .vid-author-row {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 5px;
+        }
+        .vid-author-av {
+            width: 30px; height: 30px; border-radius: 50%;
+            border: 2px solid #fff; overflow: hidden; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 12px; color: #fff;
+        }
+        .vid-author-av img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .vid-author-name { font-size: 13px; font-weight: 700; color: #fff; }
+        .vid-title-txt { font-size: 12px; font-weight: 600; color: #fff; margin-bottom: 2px; }
+        .vid-desc-txt { font-size: 11px; color: rgba(255,255,255,0.82); line-height: 1.4; }
+
+        /* Right side action buttons — to the right of the narrow card */
+        .vid-actions-right {
+            right: 10px; left: auto;
+            position: absolute;
+            left: calc(100% + 12px);
+            bottom: 50px;
+            display: flex; flex-direction: column; align-items: center; gap: 20px;
+        }
+
+        .vid-btn {
+            display: flex; flex-direction: column; align-items: center; gap: 3px;
+            border: none; background: none; cursor: pointer; color: #fff; font-family: inherit;
+        }
+        .vid-btn-icon {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: rgba(255,255,255,0.18);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 19px;
+            transition: background 0.15s, transform 0.15s;
+        }
+        .vid-btn:hover .vid-btn-icon { background: rgba(255,255,255,0.3); transform: scale(1.1); }
+        .vid-btn.liked .vid-btn-icon { background: rgba(240,40,73,0.6); }
+        .vid-btn.disliked .vid-btn-icon { background: rgba(80,80,80,0.65); }
+        .vid-btn-lbl { font-size: 10px; font-weight: 600; color: #fff; text-align: center; max-width: 48px; line-height: 1.2; }
+
+        /* delete btn */
+        .vid-del-btn {
+            position: absolute; top: 8px; right: 8px;
+            background: rgba(0,0,0,0.5); border: none; border-radius: 14px;
+            color: #fff; font-size: 11px; font-weight: 600; padding: 4px 9px;
+            cursor: pointer; z-index: 2;
+        }
+        .vid-del-btn:hover { background: rgba(240,40,73,0.7); }
+
+
+        .video-empty-dark {
+            color: rgba(255,255,255,0.5); text-align: center;
+            padding: 80px 30px; font-size: 15px; line-height: 1.8;
+            width: 100%; margin: auto;
+        }
+
+        /* Upload modal for video */
+        .vid-modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; }
+        .vid-modal-bg.open { display: flex; }
+        .vid-modal-box { background: #fff; border-radius: 16px; padding: 24px; width: 460px; max-width: 92vw; }
+        .vid-modal-box h3 { font-size: 18px; font-weight: 700; color: #050505; margin-bottom: 16px; }
+        .vid-modal-box input[type=text], .vid-modal-box textarea {
+            width: 100%; padding: 10px 14px; background: #f0f2f5; border: none;
+            border-radius: 8px; font-size: 15px; margin-bottom: 12px;
+            font-family: inherit; color: #050505;
+        }
+        .vid-modal-box textarea { resize: none; min-height: 70px; }
+        .vid-modal-box input:focus, .vid-modal-box textarea:focus { outline: 2px solid #0084ff; }
+        .vid-modal-box input::placeholder, .vid-modal-box textarea::placeholder { color: #8a8d91; }
+        .vid-upload-zone {
+            border: 2px dashed #e4e6ea; border-radius: 10px;
+            padding: 24px; text-align: center; cursor: pointer;
+            margin-bottom: 16px; transition: border-color 0.15s;
+        }
+        .vid-upload-zone:hover, .vid-upload-zone.has-video { border-color: #0084ff; }
+        .vid-upload-zone p { color: #65676b; font-size: 14px; margin-top: 6px; }
+        .vid-upload-zone .vid-ready { color: #00c851; font-weight: 600; font-size: 14px; }
+        .vid-modal-btns { display: flex; gap: 8px; }
+        .vid-modal-btns button { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .vid-modal-btns .ok { background: #0084ff; color: #fff; }
+        .vid-modal-btns .ok:hover { background: #006ccd; }
+        .vid-modal-btns .no { background: #f0f2f5; color: #050505; }
+
+        .video-empty { text-align: center; color: #8a8d91; padding: 60px 20px; font-size: 15px; line-height: 1.7; }
+
+        /* Modal */
+        .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-bg.open { display: flex; }
+        .modal-box { background: #fff; border-radius: 16px; padding: 24px; width: 380px; max-width: 90vw; }
+        .modal-box h3 { font-size: 18px; font-weight: 700; color: #050505; margin-bottom: 16px; }
+        .modal-box input { width: 100%; padding: 10px 14px; background: #f0f2f5; border: none; border-radius: 8px; font-size: 15px; margin-bottom: 12px; font-family: inherit; color: #050505; }
+        .modal-box input:focus { outline: 2px solid #0084ff; }
+        .mlist { max-height: 260px; overflow-y: auto; border: 1px solid #e4e6ea; border-radius: 10px; padding: 6px; margin-bottom: 16px; }
+        .muser { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 14px; color: #050505; }
+        .muser:hover { background: #f0f2f5; }
+        .muser.sel { background: #e8f4ff; }
+        .muser input[type=checkbox] { accent-color: #0084ff; width: 16px; height: 16px; flex-shrink: 0; }
+        .mbtns { display: flex; gap: 8px; }
+        .mbtns button { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .mbtns .ok { background: #0084ff; color: #fff; }
+        .mbtns .ok:hover { background: #006ccd; }
+        .mbtns .no { background: #f0f2f5; color: #050505; }
+        .mbtns .no:hover { background: #e4e6ea; }
+
+        /* ===== BOTTOM SIDEBAR ===== */
+        .sb-bottom {
+            border-top: 1px solid #e4e6ea;
+            padding: 8px 10px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .sb-bot-btn {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 12px; border-radius: 10px;
+            cursor: pointer; border: none; font-family: inherit;
+            background: transparent; width: 100%; text-align: left;
+            transition: background 0.15s;
+        }
+        .sb-bot-btn:hover { background: #f0f2f5; }
+        .sb-bot-icon {
+            width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; flex-shrink: 0; background: #f0f2f5;
+        }
+        .sb-bot-label { font-size: 15px; font-weight: 500; color: #050505; }
+        .sb-bot-btn.logout .sb-bot-icon { background: #fff0f0; }
+        .sb-bot-btn.logout .sb-bot-label { color: #f02849; }
+        .sb-bot-btn.logout:hover { background: #fff0f0; }
+
+        .nav-tab.t-notif.active  .tab-icon { background: #0084ff; }
+        .nav-tab.t-notif.active  .tab-label { color: #0084ff; }
+        .nav-tab.t-aide.active   .tab-icon { background: #20bf6b; }
+        .nav-tab.t-aide.active   .tab-label { color: #20bf6b; }
+
+        /* ===== AIDE AREA ===== */
+        .aide-area {
+            flex: 1; display: none; flex-direction: column;
+            height: 100vh; overflow: hidden; background: #f0f2f5;
+        }
+        .aide-area.active { display: flex; }
+        .aide-hdr {
+            background: #fff; border-bottom: 1px solid #e4e6ea;
+            padding: 20px 28px; flex-shrink: 0;
+        }
+        .aide-hdr h2 { font-size: 20px; font-weight: 700; color: #050505; }
+        .aide-hdr p { font-size: 14px; color: #65676b; margin-top: 4px; }
+        .aide-content { flex: 1; overflow-y: auto; padding: 20px 28px; }
+        .aide-content::-webkit-scrollbar { width: 4px; }
+        .aide-content::-webkit-scrollbar-thumb { background: #e4e6ea; border-radius: 4px; }
+        .aide-section {
+            background: #fff; border-radius: 12px; border: 1px solid #e4e6ea;
+            margin-bottom: 14px; overflow: hidden;
+        }
+        .aide-section-hdr {
+            display: flex; align-items: center; gap: 12px;
+            padding: 16px 18px; cursor: pointer;
+            border-bottom: 1px solid #e4e6ea;
+        }
+        .aide-section-hdr:hover { background: #f9f9f9; }
+        .aide-section-icon { font-size: 22px; }
+        .aide-section-title { font-size: 15px; font-weight: 700; color: #050505; flex: 1; }
+        .aide-section-body { padding: 16px 18px; font-size: 14px; color: #444; line-height: 1.7; }
+        .aide-step { display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start; }
+        .aide-step-num {
+            width: 26px; height: 26px; border-radius: 50%; background: #0084ff;
+            color: #fff; font-size: 13px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
+        }
+        .aide-step-txt { flex: 1; }
+        .aide-step-txt b { color: #050505; }
+
+        /* ===== NOTIFICATIONS AREA ===== */
+        .notif-area {
+            flex: 1; display: none; flex-direction: column;
+            height: 100vh; overflow: hidden; background: #f0f2f5;
+        }
+        .notif-area.active { display: flex; }
+        .notif-hdr {
+            background: #fff; border-bottom: 1px solid #e4e6ea;
+            padding: 16px 24px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .notif-hdr h2 { font-size: 20px; font-weight: 700; color: #050505; }
+        .notif-clear-btn {
+            background: none; border: none; font-size: 13px; color: #0084ff;
+            cursor: pointer; font-family: inherit; font-weight: 600; padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .notif-clear-btn:hover { background: #e8f4ff; }
+        .notif-list { flex: 1; overflow-y: auto; padding: 10px 16px; }
+        .notif-list::-webkit-scrollbar { width: 4px; }
+        .notif-list::-webkit-scrollbar-thumb { background: #e4e6ea; border-radius: 4px; }
+        .notif-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 12px; border-radius: 12px;
+            background: #fff; border: 1px solid #e4e6ea;
+            margin-bottom: 8px; cursor: pointer; transition: background 0.1s;
+        }
+        .notif-item:hover { background: #f0f2f5; }
+        .notif-item.unread { background: #e8f4ff; border-color: #c5dcf5; }
+        .notif-icon { font-size: 22px; flex-shrink: 0; }
+        .notif-body { flex: 1; min-width: 0; }
+        .notif-txt { font-size: 14px; color: #050505; line-height: 1.4; }
+        .notif-txt b { font-weight: 700; }
+        .notif-time { font-size: 12px; color: #8a8d91; margin-top: 2px; }
+        .notif-dot { width: 10px; height: 10px; background: #0084ff; border-radius: 50%; flex-shrink: 0; }
+        .notif-empty { text-align: center; color: #8a8d91; font-size: 14px; padding: 50px 20px; line-height: 1.7; }
+
+        /* notif badge on sidebar button */
+        .notif-sb-badge {
+            background: #f02849; color: #fff; border-radius: 10px;
+            font-size: 11px; font-weight: 700; min-width: 18px; height: 18px;
+            display: none; align-items: center; justify-content: center;
+            padding: 0 4px; margin-left: auto;
+        }
+        .c3{background:#7b68ee}.c4{background:#f7b731;color:#050505!important}
+        .c5{background:#20bf6b}.c6{background:#eb3b5a}.c7{background:#a55eea}
+        .c8{background:#fd9644;color:#050505!important}.c9{background:#45aaf2}
+
+        /* ===== USER PROFILE MODAL ===== */
+        .profile-modal-bg {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.55); z-index: 6000;
+            align-items: flex-end; justify-content: center;
+        }
+        .profile-modal-bg.open { display: flex; }
+        .profile-modal-panel {
+            background: #fff; border-radius: 20px 20px 0 0;
+            width: 100%; max-width: 500px;
+            max-height: 85vh; display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+        .profile-modal-hdr {
+            display: flex; align-items: center; justify-content: flex-end;
+            padding: 12px 16px 0; flex-shrink: 0;
+        }
+        .profile-modal-close {
+            width: 30px; height: 30px; border-radius: 50%;
+            background: #f0f2f5; border: none; font-size: 16px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .profile-modal-close:hover { background: #e4e6ea; }
+        .profile-modal-body { flex: 1; overflow-y: auto; padding: 16px 20px 24px; }
+        .profile-modal-body::-webkit-scrollbar { width: 4px; }
+        .profile-modal-body::-webkit-scrollbar-thumb { background: #e4e6ea; border-radius: 4px; }
+
+        .pm-top {
+            display: flex; align-items: center; gap: 16px; margin-bottom: 20px;
+        }
+        .pm-av {
+            width: 72px; height: 72px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 28px; color: #fff;
+            flex-shrink: 0; overflow: hidden; border: 3px solid #e4e6ea;
+        }
+        .pm-av img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .pm-name { font-size: 20px; font-weight: 700; color: #050505; }
+        .pm-status { font-size: 13px; color: #00c851; margin-top: 2px; }
+
+        .pm-stats {
+            display: flex; gap: 0; border: 1px solid #e4e6ea;
+            border-radius: 12px; overflow: hidden; margin-bottom: 16px;
+        }
+        .pm-stat {
+            flex: 1; text-align: center; padding: 12px 8px;
+            border-right: 1px solid #e4e6ea;
+        }
+        .pm-stat:last-child { border-right: none; }
+        .pm-stat-num { font-size: 18px; font-weight: 700; color: #050505; }
+        .pm-stat-lbl { font-size: 12px; color: #8a8d91; margin-top: 2px; }
+
+        .pm-follow-btn {
+            width: 100%; padding: 11px; border: none; border-radius: 10px;
+            font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit;
+            margin-bottom: 20px; transition: all 0.15s;
+        }
+        .pm-follow-btn.follow { background: #0084ff; color: #fff; }
+        .pm-follow-btn.follow:hover { background: #006ccd; }
+        .pm-follow-btn.unfollow { background: #f0f2f5; color: #050505; }
+        .pm-follow-btn.unfollow:hover { background: #e4e6ea; }
+
+        .pm-pubs-title { font-size: 14px; font-weight: 700; color: #8a8d91; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+        .pm-pubs-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;
+        }
+        .pm-pub-item {
+            aspect-ratio: 1; background: #f0f2f5; border-radius: 4px;
+            overflow: hidden; cursor: pointer;
+        }
+        .pm-pub-item img, .pm-pub-item video {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+        .pm-pub-empty { text-align: center; color: #8a8d91; font-size: 14px; padding: 30px; grid-column: span 3; }
+
+        /* ===== COMMENTS MODAL ===== */
+        .comments-bg {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5); z-index: 5000;
+            align-items: flex-end; justify-content: center;
+        }
+        .comments-bg.open { display: flex; }
+        .comments-panel {
+            background: #fff; border-radius: 20px 20px 0 0;
+            width: 100%; max-width: 600px;
+            height: 75vh; display: flex; flex-direction: column;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+        }
+        .comments-hdr {
+            padding: 14px 16px 10px;
+            border-bottom: 1px solid #e4e6ea;
+            display: flex; align-items: center; justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .comments-hdr h3 { font-size: 16px; font-weight: 700; color: #050505; }
+        .comments-close {
+            width: 30px; height: 30px; border-radius: 50%;
+            background: #f0f2f5; border: none; font-size: 16px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .comments-close:hover { background: #e4e6ea; }
+        .comments-list {
+            flex: 1; overflow-y: auto; padding: 12px 16px;
+        }
+        .comments-list::-webkit-scrollbar { width: 4px; }
+        .comments-list::-webkit-scrollbar-thumb { background: #e4e6ea; border-radius: 4px; }
+        .comment-item {
+            display: flex; gap: 10px; margin-bottom: 16px; align-items: flex-start;
+        }
+        .comment-av {
+            width: 34px; height: 34px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 13px; color: #fff; flex-shrink: 0;
+            overflow: hidden;
+        }
+        .comment-av img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .comment-body { flex: 1; }
+        .comment-author { font-weight: 700; font-size: 13px; color: #050505; }
+        .comment-text { font-size: 14px; color: #050505; margin-top: 2px; line-height: 1.4; word-break: break-word; }
+        .comment-time { font-size: 11px; color: #8a8d91; margin-top: 4px; }
+        .comment-del { background: none; border: none; color: #ccc; font-size: 14px; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+        .comment-del:hover { color: #f02849; background: #fff0f0; }
+        .comments-empty { text-align: center; color: #8a8d91; font-size: 14px; padding: 40px 20px; line-height: 1.7; }
+        .comments-input-bar {
+            padding: 10px 16px 16px;
+            border-top: 1px solid #e4e6ea;
+            display: flex; align-items: center; gap: 10px;
+            flex-shrink: 0;
+        }
+        .comments-input-bar input {
+            flex: 1; padding: 10px 16px; background: #f0f2f5;
+            border: none; border-radius: 22px; font-size: 15px;
+            color: #050505; font-family: inherit;
+        }
+        .comments-input-bar input:focus { outline: 2px solid #0084ff; }
+        .comments-input-bar input::placeholder { color: #8a8d91; }
+        .comments-send {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: #0084ff; color: #fff; border: none;
+            font-size: 16px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.15s; flex-shrink: 0;
+        }
+        .comments-send:hover { background: #006ccd; }
+
+        /* ===== CONFIRM DECONNEXION MODAL ===== */
+        .confirm-bg {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.45); z-index: 9999;
+            align-items: center; justify-content: center;
+        }
+        .confirm-bg.open { display: flex; }
+        .confirm-box {
+            background: #fff; border-radius: 16px;
+            padding: 28px 24px; width: 320px; max-width: 90vw;
+            text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        }
+        .confirm-icon { font-size: 40px; margin-bottom: 12px; }
+        .confirm-title { font-size: 18px; font-weight: 700; color: #050505; margin-bottom: 6px; }
+        .confirm-sub { font-size: 14px; color: #65676b; margin-bottom: 24px; line-height: 1.5; }
+        .confirm-btns { display: flex; gap: 10px; }
+        .confirm-btns button {
+            flex: 1; padding: 12px; border: none; border-radius: 10px;
+            font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit;
+            transition: opacity 0.15s;
+        }
+        .confirm-btns button:hover { opacity: 0.85; }
+        .confirm-ok { background: #f02849; color: #fff; }
+        .confirm-no { background: #f0f2f5; color: #050505; }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="page-login">
+    <div class="login-card">
+        <div class="logo">NoteChat</div>
+        <div class="tagline">Connecte-toi pour envoyer des messages</div>
+        <div class="login-error" id="login-error"></div>
+        <input id="inp-pseudo" type="text" placeholder="Ton pseudo">
+        <input id="inp-code" type="password" placeholder="Code à 5 caractères (lettres + chiffres)" maxlength="5">
+        <button class="btn-login" onclick="connecter()">Se connecter</button>
+        <div class="login-hint">Pas encore de compte ? Entre un pseudo + un code de 5 caractères (ex: ab12c) pour t'inscrire.</div>
+    </div>
+</div>
+
+<!-- APP -->
+<div id="page-app">
+    <div class="app">
+
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="sb-top">
+                <div class="sb-title-row">
+                    <div class="sb-title">NoteChat</div>
+                </div>
+                <div class="user-row">
+                    <div class="uav c0" id="cur-av">?</div>
+                    <div>
+                        <div class="uav-name" id="cur-name"></div>
+                        <div class="uav-status">● En ligne</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nav-tabs">
+                <button class="nav-tab t-public active" id="tab-public" onclick="goTab('public')">
+                    <div class="tab-icon">🏠</div><span class="tab-label">Accueil</span>
+                </button>
+                <button class="nav-tab t-msg" id="tab-messages" onclick="goTab('messages')">
+                    <div class="tab-icon">✉️</div><span class="tab-label">Messages</span>
+                    <span class="tab-badge" id="badge">0</span>
+                </button>
+                <button class="nav-tab t-prive" id="tab-prive" onclick="goTab('prive')">
+                    <div class="tab-icon">💬</div><span class="tab-label">Privé</span>
+                </button>
+                <button class="nav-tab t-eph" id="tab-eph" onclick="goTab('eph')">
+                    <div class="tab-icon">⏳</div><span class="tab-label">Éphémère</span>
+                </button>
+                <button class="nav-tab t-grp" id="tab-grp" onclick="goTab('grp')">
+                    <div class="tab-icon">👥</div><span class="tab-label">Groupe</span>
+                </button>
+                <button class="nav-tab t-compte" id="tab-compte" onclick="goTab('compte')">
+                    <div class="tab-icon" id="tab-compte-icon" style="overflow:hidden;">👤</div><span class="tab-label">Compte</span>
+                </button>
+                <button class="nav-tab t-notif" id="tab-notif" onclick="goTab('notif')">
+                    <div class="tab-icon">🔔</div><span class="tab-label">Notifications</span>
+                    <span class="notif-sb-badge" id="notif-badge">0</span>
+                </button>
+            </div>
+
+            <div class="search-wrap" id="search-wrap">
+                <input id="sinp" placeholder="🔍 Rechercher..." onkeyup="onSearch(event)">
+                <div class="sdrop" id="sdrop"></div>
+            </div>
+            <div class="conv-list" id="conv-list"></div>
+
+            <!-- Bottom: Aide + Déconnexion -->
+            <div class="sb-bottom">
+                <button class="sb-bot-btn" onclick="goTab('aide')">
+                    <div class="sb-bot-icon">❓</div>
+                    <span class="sb-bot-label">Aide</span>
+                </button>
+                <button class="sb-bot-btn logout" onclick="deconnecter()">
+                    <div class="sb-bot-icon">🚪</div>
+                    <span class="sb-bot-label">Déconnexion</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- CHAT AREA -->
+        <div class="chat-area" id="chat-area">
+            <div class="chat-hdr">
+                <div class="hdr-av c0" id="hav">🌍</div>
+                <div>
+                    <div class="hdr-name" id="hname">Fil public</div>
+                    <div class="hdr-sub" id="hsub">Toutes les notes publiques</div>
+                    <div class="hdr-members" id="hmembers"></div>
+                </div>
+            </div>
+            <div class="msgs-area" id="msgs-area">
+                <div class="empty-chat">Aucun message pour le moment</div>
+            </div>
+            <div class="input-wrap" id="input-wrap">
+                <div class="msg-lbl" id="mlbl">🌍 Message public</div>
+                <div class="input-bar">
+                    <!-- Emoji picker panel -->
+                    <div class="emoji-picker" id="emoji-picker">
+                        <div class="emoji-cats" id="emoji-cats"></div>
+                        <div class="emoji-grid" id="emoji-grid"></div>
+                    </div>
+                    <button class="emoji-btn" onclick="toggleEmojiPicker(event)" title="Emojis">😊</button>
+                    <input id="minp" placeholder="Aa" onkeypress="if(event.key==='Enter')send()">
+                    <button class="voice-btn" id="voice-btn" onclick="toggleVoice()" title="Message vocal">🎤</button>
+                    <button class="send-btn" onclick="send()">➤</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- COMPTE AREA -->
+        <div class="compte-area" id="compte-area">
+
+            <!-- Profile header -->
+            <div class="compte-hdr">
+                <div class="profile-av-wrap" onclick="document.getElementById('photo-input').click()">
+                    <div class="profile-av c0" id="profile-av">?</div>
+                    <div class="profile-av-edit">📷</div>
+                    <input type="file" id="photo-input" accept="image/*" onchange="changerPhoto(event)">
+                </div>
+                <div class="profile-info">
+                    <div class="profile-name" id="profile-name"></div>
+                    <div class="profile-status">● En ligne</div>
+                    <div class="profile-stats">
+                        <div class="stat-item">
+                            <div class="stat-num" id="stat-pubs">0</div>
+                            <div class="stat-lbl">Publications</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-num" id="stat-amis">0</div>
+                            <div class="stat-lbl">Amis</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-num" id="stat-dls">0</div>
+                            <div class="stat-lbl">Abonnés</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inner tabs -->
+            <div class="compte-tabs">
+                <button class="compte-tab active" id="ctab-pubs" onclick="goCompteTab('pubs')">📝 Publications</button>
+                <button class="compte-tab" id="ctab-publies" onclick="goCompteTab('publies')">🖼️ Publiés</button>
+                <button class="compte-tab" id="ctab-dl" onclick="goCompteTab('dl')">📥 Téléchargements</button>
+                <button class="compte-tab" id="ctab-notifs" onclick="goCompteTab('notifs')">🔔 Notifications</button>
+            </div>
+
+            <!-- Publications content -->
+            <div class="compte-content" id="compte-content">
+                <!-- filled by JS -->
+            </div>
+        </div>
+
+        <!-- VIDEO AREA — TikTok style -->
+        <div class="video-area" id="video-area">
+            <div class="video-topbar">
+                <h2>🏠 Accueil</h2>
+            </div>
+            <div class="video-feed" id="video-feed">
+                <div class="video-empty-dark">🎬<br><br>Aucune vidéo pour le moment.<br>Sois le premier à publier !</div>
+            </div>
+        </div>
+
+        <!-- AIDE AREA -->
+        <div class="aide-area" id="aide-area">
+            <div class="aide-hdr">
+                <h2>❓ Aide — Comment utiliser NoteChat</h2>
+                <p>Tout ce dont tu as besoin pour bien démarrer</p>
+            </div>
+            <div class="aide-content">
+
+                <div class="aide-section">
+                    <div class="aide-section-hdr"><span class="aide-section-icon">🔑</span><span class="aide-section-title">Connexion & Inscription</span></div>
+                    <div class="aide-section-body">
+                        <div class="aide-step"><div class="aide-step-num">1</div><div class="aide-step-txt">Sur la page d'accueil, entre ton <b>pseudo</b> (ton nom d'utilisateur) et un <b>code à 5 chiffres</b>.</div></div>
+                        <div class="aide-step"><div class="aide-step-num">2</div><div class="aide-step-txt">Si c'est ta première fois, ton compte est <b>créé automatiquement</b>. Si ton pseudo existe déjà, le code doit correspondre.</div></div>
+                        <div class="aide-step"><div class="aide-step-num">3</div><div class="aide-step-txt">Tu restes connecté automatiquement à chaque visite. Utilise le bouton <b>Déconnexion</b> en bas à gauche pour sortir.</div></div>
+                    </div>
+                </div>
+
+                <div class="aide-section">
+                    <div class="aide-section-hdr"><span class="aide-section-icon">🎬</span><span class="aide-section-title">Vidéos</span></div>
+                    <div class="aide-section-body">
+                        <div class="aide-step"><div class="aide-step-num">1</div><div class="aide-step-txt">L'onglet <b>Vidéos</b> affiche les vidéos publiées par tous les utilisateurs. Fais défiler vers le bas pour voir les suivantes.</div></div>
+                        <div class="aide-step"><div class="aide-step-num">2</div><div class="aide-step-txt">Appuie sur une vidéo pour la <b>mettre en pause ou relancer</b>. Les vidéos se lancent automatiquement en scrollant.</div></div>
+                        <div class="aide-step"><div class="aide-step-num">3</div><div class="aide-step-txt">Utilise les boutons à droite : <b>👍 Like</b>, <b>👎 Dislike</b>, <b>💬 Commentaires</b>, <b>⬇️ Télécharger</b> (enregistre la vidéo dans tes téléchargements).</div></div>
+                        <div class="aide-step"><div class="aide-step-num">4</div><div class="aide-step-txt">Pour publier une vidéo, va dans <b>Compte → Publications</b> et clique sur le bouton <b>🎬 Vidéo</b>.</div></div>
+                    </div>
+                </div>
+
+                <div class="aide-section">
+                    <div class="aide-section-hdr"><span class="aide-section-icon">✉️</span><span class="aide-section-title">Messages & Messagerie privée</span></div>
+                    <div class="aide-section-body">
+                        <div class="aide-step"><div class="aide-step-num">1</div><div class="aide-step-txt">L'onglet <b>Messages</b> (avec badge rouge) affiche tous les messages reçus. Clique dessus pour répondre directement.</div></div>
+                        <div class="aide-step"><div class="aide-step-num">2</div><div class="aide-step-txt">L'onglet <b>Privé</b> te permet d'écrire à un ami. Utilise la <b>barre de recherche</b> pour trouver un utilisateur et l'ajouter.</div></div>
+                        <div class="aide-step"><div class="aide-step-num">3</div><div class="aide-step-txt">L'onglet <b>Éphémère</b> envoie des messages qui <b>disparaissent après 24h</b>.</div></div>
+                    </div>
+                </div>
+
+                <div class="aide-section">
+                    <div class="aide-section-hdr"><span class="aide-section-icon">👥</span><span class="aide-section-title">Groupes</span></div>
+                    <div class="aide-section-body">
+                        <div class="aide-step"><div class="aide-step-num">1</div><div class="aide-step-txt">Clique sur l'onglet <b>Groupe</b> puis sur le bouton <b>+</b> pour créer un nouveau groupe.</div></div>
+                        <div class="aide-step"><div class="aide-step-num">2</div><div class="aide-step-txt">Donne un <b>nom au groupe</b> et sélectionne les membres à inclure.</div></div>
+                        <div class="aide-step"><div class="aide-step-num">3</div><div class="aide-step-txt">Tous les membres du groupe peuvent <b>lire et envoyer des messages</b> dans le groupe.</div></div>
+                    </div>
+                </div>
+
+                <div class="aide-section">
+                    <div class="aide-section-hdr"><span class="aide-section-icon">👤</span><span class="aide-section-title">Mon Compte</span></div>
+                    <div class="aide-section-body">
+                        <div class="aide-step"><div class="aide-step-num">1</div><div class="aide-step-txt"><b>Photo de profil</b> : Clique sur ton avatar dans l'onglet Compte pour choisir une photo depuis ta galerie.</div></div>
+                        <div class="aide-step"><div class="aide-step-num">2</div><div class="aide-step-txt"><b>Publications</b> : Publie du texte, des photos ou des vidéos. Les autres utilisateurs peuvent les liker.</div></div>
+                        <div class="aide-step"><div class="aide-step-num">3</div><div class="aide-step-txt"><b>Téléchargements</b> : Les vidéos que tu télécharges depuis le fil sont sauvegardées ici. Tu peux les télécharger sur ton appareil.</div></div>
+                        <div class="aide-step"><div class="aide-step-num">4</div><div class="aide-step-txt"><b>Notifications</b> : Vois ici toutes tes activités récentes (likes, messages, nouveaux membres...).</div></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- NOTIFICATIONS AREA -->
+        <div class="notif-area" id="notif-area">
+            <div class="notif-hdr">
+                <h2>🔔 Notifications</h2>
+                <button class="notif-clear-btn" onclick="clearNotifs()">Tout marquer comme lu</button>
+            </div>
+            <div class="notif-list" id="notif-list">
+                <div class="notif-empty">🔔<br><br>Aucune notification pour le moment.</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+<div class="vid-modal-bg" id="vid-modal">
+    <div class="vid-modal-box">
+        <h3>📹 Publier une vidéo</h3>
+        <input type="text" id="vid-title" placeholder="Titre de la vidéo">
+        <textarea id="vid-desc" placeholder="Description (optionnel)"></textarea>
+        <div class="vid-upload-zone" id="vid-drop-zone" onclick="document.getElementById('vid-file-inp').click()">
+            <div style="font-size:36px;">🎬</div>
+            <p id="vid-drop-txt">Clique pour choisir une vidéo depuis ta galerie</p>
+            <input type="file" id="vid-file-inp" accept="video/*" onchange="onVidSelected(event)">
+        </div>
+        <div class="vid-modal-btns">
+            <button class="ok" onclick="publierVideo()">Publier</button>
+            <button class="no" onclick="fermerVidModal()">Annuler</button>
+        </div>
+    </div>
+</div>
+<div class="modal-bg" id="grp-modal">
+    <div class="modal-box">
+        <h3>Créer un groupe</h3>
+
+        <!-- Photo du groupe -->
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+            <div id="grp-photo-preview" onclick="document.getElementById('grp-photo-input').click()" style="width:64px;height:64px;border-radius:50%;background:#f7b731;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;border:3px dashed #e4e6ea;overflow:hidden;flex-shrink:0;position:relative;">
+                👥
+                <div style="position:absolute;bottom:0;right:0;width:20px;height:20px;background:#0084ff;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:11px;">📷</div>
+            </div>
+            <div style="flex:1;">
+                <input id="grp-name" placeholder="Nom du groupe" style="width:100%;padding:10px 14px;background:#f0f2f5;border:none;border-radius:8px;font-size:15px;font-family:inherit;color:#050505;">
+                <div style="font-size:12px;color:#8a8d91;margin-top:6px;">Clique sur l'icône pour ajouter une photo</div>
+            </div>
+        </div>
+        <input type="file" id="grp-photo-input" accept="image/*" style="display:none;" onchange="previewGrpPhoto(event)">
+
+        <div class="mlist" id="mlist"></div>
+        <div class="mbtns">
+            <button class="ok" onclick="creerGroupe()">Créer</button>
+            <button class="no" onclick="closeModal()">Annuler</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// NOTECHAT - VERSION AVEC BASE DE DONNÉES (MongoDB)
+// TOUT LE DESIGN RESTE IDENTIQUE
+// SEUL LE STOCKAGE CHANGE (localStorage → API)
+// ============================================================
+
+const API_URL = window.location.origin;
+
+// Variables globales (inchangées)
+let users = [];
+let msgs = [];
+let grps = [];
+let pubs = [];
+let vids = [];
+let dls = [];
+let me = '';
+let seen = [];
+let tab = 'public';
+let convId = 'public';
+let convType = 'public';
+let compteTab = 'pubs';
+let pubImgData = null;
+let vidData = null;
+let grpPhotoData = null;
+let vidBlobURLs = {};
+
+// Couleurs pour avatars (inchangé)
+const C = ['c0','c1','c2','c3','c4','c5','c6','c7','c8','c9'];
+function ac(n) { let h = 0; for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) % C.length; return C[h]; }
+
+// ========== FONCTIONS API ==========
+async function apiCall(endpoint, method = 'GET', data = null) {
+    const options = { method, headers: { 'Content-Type': 'application/json' } };
+    if (data) options.body = JSON.stringify(data);
+    const res = await fetch(`${API_URL}${endpoint}`, options);
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+}
+
+// ========== CHARGEMENT DES DONNÉES ==========
+async function chargerDonnees() {
+    try {
+        const [usersData, msgsData, grpsData, pubsData, vidsData] = await Promise.all([
+            apiCall('/api/users'),
+            apiCall('/api/messages/public/null'),
+            apiCall('/api/groupes'),
+            apiCall('/api/publications'),
+            apiCall('/api/videos')
+        ]);
+        users = usersData;
+        msgs = msgsData;
+        grps = grpsData;
+        pubs = pubsData;
+        vids = vidsData;
+        dls = JSON.parse(localStorage.getItem('nc_dls_' + me)) || [];
+    } catch (err) {
+        console.error('Erreur chargement:', err);
+    }
+}
+
+// ========== SAUVEGARDE (uniquement pour les téléchargements locaux) ==========
+function save() {
+    localStorage.setItem('nc_dls_' + me, JSON.stringify(dls));
+}
+
+// ========== FONCTIONS UTILITAIRES (inchangées) ==========
+function getPhoto(u) {
+    const user = users.find(user => user.pseudo === u);
+    return user?.photo || null;
+}
+
+function avatarHTML(u, size = 36, cls = '') {
+    const ph = getPhoto(u);
+    const col = ac(u);
+    const letter = u.charAt(0).toUpperCase();
+    if (ph) {
+        return `<div style="width:${size}px;height:${size}px;border-radius:50%;overflow:hidden;flex-shrink:0;" class="${cls}"><img src="${ph}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>`;
+    }
+    return `<div style="width:${size}px;height:${size}px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:${Math.round(size * 0.4)}px;color:#fff;flex-shrink:0;" class="${col} ${cls}">${letter}</div>`;
+}
+
+function showError(m) {
+    const e = document.getElementById('login-error');
+    e.textContent = m;
+    e.style.display = 'block';
+}
+
+// ========== CONNEXION ==========
+async function connecter() {
+    const p = document.getElementById('inp-pseudo').value.trim();
+    const c = document.getElementById('inp-code').value.trim();
+    if (!p) { showError('Entre ton pseudo'); return; }
+    if (c.length !== 5 || !/^[a-zA-Z0-9]{5}$/.test(c)) {
+        showError('Le code doit avoir 5 caractères (lettres et chiffres)');
+        return;
+    }
+    try {
+        const result = await apiCall('/api/login', 'POST', { pseudo: p, code: c });
+        me = p;
+        localStorage.setItem('nc_me', me);
+        await chargerDonnees();
+        ouvrirApp();
+    } catch (err) {
+        showError(err.error || 'Erreur de connexion');
+    }
+}
+
+// ========== OUVERTURE APP ==========
+function ouvrirApp() {
+    document.getElementById('page-login').style.display = 'none';
+    document.getElementById('page-app').style.display = 'block';
+    updateAvatarsUI();
+    document.getElementById('cur-name').textContent = me;
+    document.getElementById('profile-name').textContent = me;
+    tab = 'public';
+    convId = 'public';
+    convType = 'public';
+    document.querySelectorAll('.nav-tab').forEach(e => e.classList.remove('active'));
+    document.getElementById('tab-public').classList.add('active');
+    document.getElementById('chat-area').style.display = 'none';
+    document.getElementById('compte-area').classList.remove('active');
+    document.getElementById('video-area').classList.add('active');
+    document.getElementById('search-wrap').style.display = 'none';
+    document.getElementById('conv-list').innerHTML = '';
+    renderVideoFeed();
+    badge();
+    updateNotifBadge();
+}
+
+// ========== MISE À JOUR AVATARS ==========
+function updateAvatarsUI() {
+    const ph = getPhoto(me);
+    const ca = document.getElementById('cur-av');
+    if (ph) {
+        ca.innerHTML = `<img src="${ph}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+        ca.className = 'uav';
+    } else {
+        ca.innerHTML = me.charAt(0).toUpperCase();
+        ca.className = 'uav ' + ac(me);
+    }
+    const pa = document.getElementById('profile-av');
+    if (ph) {
+        pa.innerHTML = `<img src="${ph}" style="width:100%;height:100%;object-fit:cover;">`;
+        pa.className = 'profile-av';
+    } else {
+        pa.innerHTML = me.charAt(0).toUpperCase();
+        pa.className = 'profile-av ' + ac(me);
+    }
+    const ti = document.getElementById('tab-compte-icon');
+    if (ti) {
+        if (ph) {
+            ti.innerHTML = `<img src="${ph}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+            ti.style.background = 'none';
+        } else {
+            ti.innerHTML = me.charAt(0).toUpperCase();
+            ti.style.background = '';
+        }
+    }
+    const myPubs = pubs.filter(p => p.auteur === me).length + vids.filter(v => v.auteur === me).length;
+    const myAmis = (users.find(u => u.pseudo === me)?.amis || []).length;
+    const myAbonnes = users.filter(u => u.amis && u.amis.includes(me)).length;
+    document.getElementById('stat-pubs').textContent = myPubs;
+    document.getElementById('stat-amis').textContent = myAmis;
+    document.getElementById('stat-dls').textContent = myAbonnes;
+}
+
+// ========== CHANGER PHOTO ==========
+async function changerPhoto(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async ev => {
+        await apiCall(`/api/users/${me}`, 'PUT', { photo: ev.target.result });
+        await chargerDonnees();
+        updateAvatarsUI();
+    };
+    reader.readAsDataURL(file);
+}
+
+// ========== CONFIRMATION MODAL ==========
+let _confirmCallback = null;
+
+function ouvrirConfirm(icon, title, sub, okLabel, callback) {
+    document.getElementById('confirm-icon').textContent = icon;
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-sub').textContent = sub;
+    document.getElementById('confirm-ok-btn').textContent = okLabel;
+    _confirmCallback = callback;
+    document.getElementById('confirm-modal').classList.add('open');
+}
+
+function fermerConfirm() {
+    document.getElementById('confirm-modal').classList.remove('open');
+    _confirmCallback = null;
+}
+
+function confirmerDeconnexion() {
+    const cb = _confirmCallback;
+    fermerConfirm();
+    if (cb) { cb(); return; }
+    _doDeconnexion();
+}
+
+function _doDeconnexion() {
+    me = '';
+    localStorage.removeItem('nc_me');
+    localStorage.removeItem('nc_pwd');
+    document.getElementById('inp-pseudo').value = '';
+    document.getElementById('inp-code').value = '';
+    document.getElementById('login-error').style.display = 'none';
+    document.getElementById('page-app').style.display = 'none';
+    document.getElementById('page-login').style.display = 'flex';
+}
+
+function deconnecter() {
+    ouvrirConfirm('🚪', 'Déconnexion', 'Es-tu sûr de vouloir te déconnecter de NoteChat ?', 'Se déconnecter', _doDeconnexion);
+}
+
+// ========== ENVOI DE MESSAGE ==========
+async function send() {
+    if ((tab === 'prive' || tab === 'grp') && !convId) {
+        alert('Sélectionne une conversation');
+        return;
+    }
+    const texte = document.getElementById('minp').value.trim();
+    if (!texte) return;
+    
+    const message = {
+        auteur: me,
+        texte: texte,
+        type: convType,
+        dest: convId,
+        exp: tab === 'eph' ? Date.now() + 86400000 : null
+    };
+    
+    try {
+        await apiCall('/api/messages', 'POST', message);
+        await chargerDonnees();
+        loadMsgs();
+        document.getElementById('minp').value = '';
+        
+        // Notifications
+        if (convType === 'prive' && convId && convId !== me) {
+            addNotifForUser(convId, '💬', `<b>${me}</b> t'a envoyé un message privé`, 'messages');
+        }
+        if (convType === 'grp' && convId) {
+            const groupe = grps.find(g => g._id === convId);
+            if (groupe) {
+                groupe.membres.filter(m2 => m2 !== me).forEach(m2 => {
+                    addNotifForUser(m2, '👥', `<b>${me}</b> a écrit dans le groupe <b>${groupe.nom}</b>`, 'grp');
+                });
+            }
+        }
+    } catch (err) {
+        console.error('Erreur envoi:', err);
+    }
+}
+
+// ========== CHARGER MESSAGES ==========
+async function loadMsgs() {
+    const area = document.getElementById('msgs-area');
+    const wrap = document.getElementById('input-wrap');
+    
+    if (tab === 'messages') {
+        area.innerHTML = '<div class="empty-chat">Sélectionne un message pour répondre</div>';
+        wrap.style.display = 'none';
+        return;
+    }
+    wrap.style.display = 'block';
+    
+    let fil = [];
+    if (convType === 'public') {
+        fil = msgs.filter(m => m.type === 'public');
+    } else if (convType === 'prive' && convId) {
+        fil = msgs.filter(m => m.type === 'prive' && ((m.auteur === me && m.dest === convId) || (m.auteur === convId && m.dest === me)));
+    } else if (convType === 'eph') {
+        fil = msgs.filter(m => m.type === 'eph');
+    } else if (convType === 'grp' && convId) {
+        fil = msgs.filter(m => m.type === 'grp' && m.dest === convId);
+    }
+    
+    if (!fil.length) {
+        area.innerHTML = '<div class="empty-chat">Aucun message pour le moment</div>';
+        return;
+    }
+    
+    let html = '', prev = null;
+    fil.forEach((m, i) => {
+        const isMe = m.auteur === me;
+        const d = new Date(m.date);
+        const t = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+        const same = prev && prev.auteur === m.auteur;
+        const isLast = i === fil.length - 1 || fil[i + 1].auteur !== m.auteur;
+        
+        if (!same) {
+            if (prev) html += '</div></div>';
+            const ph = getPhoto(m.auteur);
+            const mavClass = ph ? 'msg-av' : 'msg-av ' + ac(m.auteur);
+            const mavContent = ph ? `<img src="${ph}">` : (m.auteur.charAt(0).toUpperCase());
+            html += `<div class="msg-grp${isMe ? ' me' : ''}">`;
+            if (!isMe) html += `<div class="${mavClass}">${mavContent}</div>`;
+            html += `<div class="msg-stack">`;
+            if (!isMe && (tab === 'grp' || tab === 'public')) html += `<div class="msg-author-lbl">${m.auteur}</div>`;
+        }
+        
+        html += m.vocal ? renderVocalBubble(m) : `<div class="bubble">${m.texte}</div>`;
+        
+        if (isLast) html += `<div class="btime">${t}</div>`;
+        prev = m;
+    });
+    html += '</div></div>';
+    area.innerHTML = html;
+    area.scrollTop = area.scrollHeight;
+}
+
+// ========== BADGE MESSAGES NON LUS ==========
+function badge() {
+    if (!me) return;
+    const count = msgs.filter(m => {
+        if (m.auteur === me) return false;
+        if (seen.includes(m.id)) return false;
+        if (m.type === 'prive' && m.dest === me) return true;
+        if (m.type === 'grp') {
+            const g = grps.find(g => g._id === m.dest);
+            if (g && g.membres.includes(me)) return true;
+        }
+        return false;
+    }).length;
+    const b = document.getElementById('badge');
+    if (count > 0) {
+        b.textContent = count > 99 ? '99+' : count;
+        b.style.display = 'inline-flex';
+    } else {
+        b.style.display = 'none';
+    }
+}
+
+// ========== NAVIGATION TABS ==========
+function goTab(t) {
+    stopAllVideos();
+    tab = t;
+    document.querySelectorAll('.nav-tab').forEach(e => e.classList.remove('active'));
+    const tabEl = document.getElementById('tab-' + t);
+    if (tabEl) tabEl.classList.add('active');
+    
+    document.getElementById('chat-area').style.display = 'none';
+    document.getElementById('compte-area').classList.remove('active');
+    document.getElementById('video-area').classList.remove('active');
+    document.getElementById('aide-area').classList.remove('active');
+    document.getElementById('notif-area').classList.remove('active');
+    document.getElementById('search-wrap').style.display = 'none';
+    document.getElementById('conv-list').innerHTML = '';
+    
+    if (t === 'public') {
+        document.getElementById('video-area').classList.add('active');
+        renderVideoFeed();
+        return;
+    }
+    if (t === 'compte') {
+        document.getElementById('compte-area').classList.add('active');
+        updateAvatarsUI();
+        goCompteTab(compteTab);
+        return;
+    }
+    if (t === 'aide') {
+        document.getElementById('aide-area').classList.add('active');
+        return;
+    }
+    if (t === 'notif') {
+        document.getElementById('notif-area').classList.add('active');
+        renderNotifs();
+        markNotifsRead();
+        return;
+    }
+    
+    document.getElementById('chat-area').style.display = 'flex';
+    document.getElementById('search-wrap').style.display = (t === 'messages') ? 'none' : '';
+    
+    if (t === 'eph') {
+        convId = 'eph';
+        convType = 'eph';
+    } else if (t === 'messages') {
+        convId = null;
+        convType = 'messages';
+    } else {
+        convId = null;
+        convType = t;
+    }
+    
+    updateHeader();
+    refresh();
+    loadMsgs();
+}
+
+function updateHeader() {
+    document.getElementById('hmembers').textContent = '';
+    const hav = document.getElementById('hav');
+    if (tab === 'public') {
+        hav.innerHTML = '🌍';
+        hav.className = 'hdr-av c0';
+        document.getElementById('hname').textContent = 'Fil public';
+        document.getElementById('hsub').textContent = 'Toutes les notes publiques';
+        document.getElementById('mlbl').textContent = '🌍 Message public';
+    } else if (tab === 'messages') {
+        hav.innerHTML = '✉️';
+        hav.className = 'hdr-av c1';
+        document.getElementById('hname').textContent = 'Messages reçus';
+        document.getElementById('hsub').textContent = '';
+        document.getElementById('mlbl').textContent = '';
+    } else if (tab === 'eph') {
+        hav.innerHTML = '⏳';
+        hav.className = 'hdr-av c3';
+        document.getElementById('hname').textContent = 'Notes éphémères';
+        document.getElementById('hsub').textContent = 'Disparaissent dans 24h';
+        document.getElementById('mlbl').textContent = '⏳ Message éphémère';
+    } else if (tab === 'prive' && convId) {
+        const ph = getPhoto(convId);
+        if (ph) {
+            hav.innerHTML = `<img src="${ph}">`;
+            hav.className = 'hdr-av';
+        } else {
+            hav.innerHTML = convId.charAt(0).toUpperCase();
+            hav.className = 'hdr-av ' + ac(convId);
+        }
+        document.getElementById('hname').textContent = convId;
+        document.getElementById('hsub').textContent = '● En ligne';
+        document.getElementById('mlbl').textContent = '💬 Message privé';
+    } else if (tab === 'grp' && convId) {
+        const g = grps.find(g => g._id === convId);
+        if (g) {
+            if (g.photo) {
+                hav.innerHTML = `<img src="${g.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+                hav.className = 'hdr-av';
+            } else {
+                hav.innerHTML = '👥';
+                hav.className = 'hdr-av c4';
+            }
+            document.getElementById('hname').textContent = g.nom;
+            document.getElementById('hsub').textContent = 'Groupe · ' + g.membres.length + ' membres';
+            document.getElementById('hmembers').textContent = g.membres.join(', ');
+            document.getElementById('mlbl').textContent = '👥 Message de groupe';
+        }
+    } else {
+        hav.innerHTML = '?';
+        hav.className = 'hdr-av c0';
+        document.getElementById('hname').textContent = 'Sélectionne une conversation';
+        document.getElementById('hsub').textContent = '';
+    }
+}
+
+function refresh() {
+    if (!me) return;
+    const list = document.getElementById('conv-list');
+    if (tab === 'public') {
+        list.innerHTML = '<div class="empty-hint">🌍 Messages visibles par tous</div>';
+    } else if (tab === 'messages') {
+        renderInbox(list);
+    } else if (tab === 'prive') {
+        renderFriends(list);
+    } else if (tab === 'eph') {
+        list.innerHTML = '<div class="empty-hint">⏳ Messages éphémères — disparaissent dans 24h</div>';
+    } else if (tab === 'grp') {
+        renderGroupes(list);
+    }
+}
+
+function renderFriends(list) {
+    const user = users.find(u => u.pseudo === me);
+    const amis = user?.amis || [];
+    if (!amis.length) {
+        list.innerHTML = '<div class="sec-lbl">Contacts</div><div class="empty-hint">Utilise la recherche pour ajouter des amis</div>';
+        return;
+    }
+    let h = '<div class="sec-lbl">Contacts <span>' + amis.length + '</span></div>';
+    amis.forEach(a => {
+        const av = avatarHTML(a, 46);
+        h += `<div class="conv-item${convId === a ? ' active' : ''}" style="position:relative;" onclick="selectConv('${a}','prive')">
+            <div style="position:relative;flex-shrink:0;">${av}<span class="online-ring"></span></div>
+            <div class="cinfo"><div class="cname">${a}</div><div class="cprev"><span style="color:#00c851;font-size:12px;">● En ligne</span></div></div>
+            <button onclick="retirerAmi(event,'${a}')" title="Retirer" style="background:none;border:none;cursor:pointer;font-size:16px;color:#ccc;padding:4px 6px;border-radius:8px;flex-shrink:0;" onmouseover="this.style.color='#f02849';this.style.background='#fff0f0'" onmouseout="this.style.color='#ccc';this.style.background='none'">✕</button>
+        </div>`;
+    });
+    list.innerHTML = h;
+}
+
+async function retirerAmi(event, ami) {
+    event.stopPropagation();
+    ouvrirConfirm('👤', 'Retirer un ami', `Veux-tu vraiment retirer ${ami} de tes contacts ?`, 'Retirer', async () => {
+        const user = await apiCall(`/api/users/${me}`);
+        user.amis = user.amis.filter(a => a !== ami);
+        await apiCall(`/api/users/${me}`, 'PUT', { amis: user.amis });
+        await chargerDonnees();
+        if (convId === ami) { convId = null; }
+        refresh();
+    });
+}
+
+function renderGroupes(list) {
+    const myG = grps.filter(g => g.membres.includes(me));
+    let h = '<div class="sec-lbl">Groupes <span class="add-btn" onclick="openModal()">+</span></div>';
+    if (!myG.length) {
+        h += '<div class="empty-hint">Clique sur + pour créer un groupe</div>';
+    } else {
+        myG.forEach(g => {
+            const avHtml = g.photo
+                ? `<div class="cav" style="overflow:hidden;"><img src="${g.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>`
+                : `<div class="cav c4" style="font-size:20px;">👥</div>`;
+            h += `<div class="conv-item${convId === g._id ? ' active' : ''}" onclick="selectConv('${g._id}','grp')">
+                ${avHtml}
+                <div class="cinfo"><div class="cname">${g.nom}</div><div class="cprev">${g.membres.length} membres</div></div>
+            </div>`;
+        });
+    }
+    list.innerHTML = h;
+}
+
+function renderInbox(list) {
+    const recus = msgs.filter(m => {
+        if (m.auteur === me) return false;
+        if (m.type === 'prive' && m.dest === me) return true;
+        if (m.type === 'grp') {
+            const g = grps.find(g => g._id === m.dest);
+            if (g && g.membres.includes(me)) return true;
+        }
+        return false;
+    });
+    const cm = {};
+    recus.forEach(m => {
+        const k = m.type === 'prive' ? 'p:' + m.auteur : 'g:' + m.dest;
+        if (!cm[k] || new Date(m.date) > new Date(cm[k].date)) cm[k] = m;
+    });
+    const sorted = Object.entries(cm).sort((a, b) => new Date(b[1].date) - new Date(a[1].date));
+    if (!sorted.length) {
+        list.innerHTML = '<div class="empty-hint">Aucun message reçu</div>';
+        return;
+    }
+    let h = '<div class="sec-lbl">Reçus <span>' + sorted.length + '</span></div>';
+    sorted.forEach(([key, m]) => {
+        const isG = key.startsWith('g:');
+        const lu = seen.includes(m.id);
+        const name = isG ? (grps.find(g => g._id === m.dest)?.nom || 'Groupe') : m.auteur;
+        const av = isG ? `<div class="cav c4" style="font-size:20px;">👥</div>` : avatarHTML(m.auteur, 46);
+        const d = new Date(m.date), n2 = new Date();
+        const t = d.toDateString() === n2.toDateString() ? d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0') : d.getDate() + '/' + (d.getMonth() + 1);
+        const oc = isG ? `openFromInbox('grp','${m.dest}')` : `openFromInbox('prive','${m.auteur}')`;
+        const prev = (isG ? m.auteur + ': ' : '') + m.texte;
+        h += `<div class="conv-item" onclick="${oc}">${av}
+            <div class="cinfo"><div class="cname">${name} <span class="ctime">${t}</span></div>
+            <div class="cprev${lu ? '' : ' unread'}"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">${prev}</span>${lu ? '' : '<span class="udot"></span>'}</div>
+            </div></div>`;
+    });
+    list.innerHTML = h;
+}
+
+async function openFromInbox(type, id) {
+    msgs.forEach(m => {
+        if (type === 'prive' && m.type === 'prive' && m.auteur === id && m.dest === me && !seen.includes(m.id)) seen.push(m.id);
+        if (type === 'grp' && m.type === 'grp' && m.dest === id && !seen.includes(m.id)) seen.push(m.id);
+    });
+    localStorage.setItem('nc_seen_' + me, JSON.stringify(seen));
+    badge();
+    
+    if (type === 'prive') {
+        const user = await apiCall(`/api/users/${me}`);
+        if (!user.amis) user.amis = [];
+        if (!user.amis.includes(id)) {
+            user.amis.push(id);
+            await apiCall(`/api/users/${me}`, 'PUT', { amis: user.amis });
+            await chargerDonnees();
+        }
+        tab = 'prive';
+        convId = id;
+        convType = 'prive';
+    } else {
+        tab = 'grp';
+        convId = id;
+        convType = 'grp';
+    }
+    
+    document.getElementById('chat-area').style.display = 'flex';
+    document.getElementById('compte-area').classList.remove('active');
+    document.getElementById('video-area').classList.remove('active');
+    document.querySelectorAll('.nav-tab').forEach(e => e.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.getElementById('search-wrap').style.display = '';
+    updateHeader();
+    refresh();
+    loadMsgs();
+}
+
+function selectConv(id, type) {
+    convId = id;
+    convType = type;
+    tab = type;
+    document.querySelectorAll('.nav-tab').forEach(e => e.classList.remove('active'));
+    document.getElementById('tab-' + type).classList.add('active');
+    updateHeader();
+    refresh();
+    loadMsgs();
+}
+
+// ========== RECHERCHE ET AJOUT AMIS ==========
+function onSearch(e) {
+    if (e.key === 'Escape') {
+        document.getElementById('sdrop').style.display = 'none';
+        return;
+    }
+    const q = document.getElementById('sinp').value.toLowerCase();
+    const d = document.getElementById('sdrop');
+    if (!q || q.length < 2) {
+        d.style.display = 'none';
+        return;
+    }
+    const found = users.filter(u => u.pseudo !== me && u.pseudo.toLowerCase().includes(q)).slice(0, 6);
+    if (!found.length) {
+        d.innerHTML = '<div class="sdrop-item" style="color:#8a8d91;">Aucun résultat</div>';
+        d.style.display = 'block';
+        return;
+    }
+    d.innerHTML = found.map(u => `<div class="sdrop-item" onclick="addFriend('${u.pseudo}')">
+        ${avatarHTML(u.pseudo, 32)}
+        <div><div style="font-weight:600;font-size:14px;">${u.pseudo}</div><div style="font-size:12px;color:#0084ff;">+ Ajouter</div></div>
+    </div>`).join('');
+    d.style.display = 'block';
+}
+
+async function addFriend(u) {
+    const user = await apiCall(`/api/users/${me}`);
+    if (!user.amis) user.amis = [];
+    if (!user.amis.includes(u)) {
+        user.amis.push(u);
+        await apiCall(`/api/users/${me}`, 'PUT', { amis: user.amis });
+        await chargerDonnees();
+    }
+    document.getElementById('sdrop').style.display = 'none';
+    document.getElementById('sinp').value = '';
+    refresh();
+}
+
+// ========== GROUPES ==========
+function openModal() {
+    grpPhotoData = null;
+    const prev = document.getElementById('grp-photo-preview');
+    if (prev) prev.innerHTML = '👥<div style="position:absolute;bottom:0;right:0;width:20px;height:20px;background:#0084ff;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:11px;">📷</div>';
+    document.getElementById('grp-photo-input').value = '';
+    const others = users.filter(u => u.pseudo !== me);
+    document.getElementById('mlist').innerHTML = others.length ? others.map(u => `
+        <div class="muser" onclick="toggleSel(this)">
+            <input type="checkbox" value="${u.pseudo}">
+            ${avatarHTML(u.pseudo, 28)}
+            <span>${u.pseudo}</span>
+        </div>`).join('') : '<div class="empty-hint">Aucun autre utilisateur</div>';
+    document.getElementById('grp-modal').classList.add('open');
+}
+
+function closeModal() {
+    document.getElementById('grp-modal').classList.remove('open');
+    document.getElementById('grp-name').value = '';
+    grpPhotoData = null;
+}
+
+function previewGrpPhoto(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+        grpPhotoData = ev.target.result;
+        const prev = document.getElementById('grp-photo-preview');
+        prev.innerHTML = `<img src="${grpPhotoData}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+        <div style="position:absolute;bottom:0;right:0;width:20px;height:20px;background:#0084ff;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:11px;">📷</div>`;
+    };
+    reader.readAsDataURL(file);
+}
+
+function toggleSel(el) {
+    const cb = el.querySelector('input');
+    cb.checked = !cb.checked;
+    el.classList.toggle('sel');
+}
+
+async function creerGroupe() {
+    const nom = document.getElementById('grp-name').value.trim();
+    if (!nom) {
+        alert('Donne un nom au groupe');
+        return;
+    }
+    const checks = document.querySelectorAll('#mlist input:checked');
+    const membres = Array.from(checks).map(c => c.value);
+    if (!membres.length) {
+        alert('Sélectionne au moins un membre');
+        return;
+    }
+    membres.push(me);
+    const groupe = { nom, membres, photo: grpPhotoData || null, created: new Date().toISOString() };
+    
+    try {
+        await apiCall('/api/groupes', 'POST', groupe);
+        await chargerDonnees();
+        closeModal();
+        tab = 'grp';
+        convId = groupe._id;
+        convType = 'grp';
+        document.getElementById('chat-area').style.display = 'flex';
+        document.getElementById('compte-area').classList.remove('active');
+        document.getElementById('video-area').classList.remove('active');
+        document.querySelectorAll('.nav-tab').forEach(e => e.classList.remove('active'));
+        document.getElementById('tab-grp').classList.add('active');
+        document.getElementById('search-wrap').style.display = '';
+        updateHeader();
+        refresh();
+        loadMsgs();
+    } catch (err) {
+        console.error('Erreur création groupe:', err);
+    }
+}
+
+// ========== COMPTE TABS ==========
+function goCompteTab(t) {
+    compteTab = t;
+    document.querySelectorAll('.compte-tab').forEach(e => e.classList.remove('active'));
+    const el = document.getElementById('ctab-' + t);
+    if (el) el.classList.add('active');
+    const content = document.getElementById('compte-content');
+    if (t === 'pubs') renderPubs(content);
+    else if (t === 'publies') renderPublies(content);
+    else if (t === 'dl') renderDl(content);
+    else if (t === 'notifs') renderNotifsInCompte(content);
+}
+
+// ========== PUBLICATIONS ==========
+function renderPubs(content) {
+    const ph = getPhoto(me);
+    const avHtml = ph ? `<div class="pub-form-av"><img src="${ph}"></div>` : `<div class="pub-form-av ${ac(me)}">${me.charAt(0).toUpperCase()}</div>`;
+    let h = `<div class="pub-form">
+        <div class="pub-form-top">${avHtml}<span style="font-size:15px;color:#8a8d91;">Quoi de neuf, ${me} ?</span></div>
+        <textarea id="pub-text" placeholder="Exprime-toi..."></textarea>
+        <div class="pub-preview" id="pub-preview"><img id="pub-preview-img" src=""><div class="pub-preview-rm" onclick="supprimerPubImg()">✕ Supprimer l'image</div></div>
+        <div class="pub-form-bottom">
+            <div class="pub-form-actions">
+                <button class="pub-img-btn" onclick="document.getElementById('pub-img-input').click()">📷 Photo</button>
+                <input type="file" id="pub-img-input" accept="image/*" onchange="ajouterPubImg(event)">
+                <button class="pub-img-btn" onclick="ouvrirVidModal()">🎬 Vidéo</button>
+            </div>
+            <button class="btn-publier" onclick="publier()">Publier</button>
+        </div>
+    </div>`;
+
+    const myPubs = pubs.filter(p => p.auteur === me).sort((a, b) => new Date(b.date) - new Date(a.date));
+    if (!myPubs.length) {
+        h += '<div class="dl-empty">📝<br><br>Tu n\'as pas encore de publications.<br>Partage quelque chose !</div>';
+    } else {
+        myPubs.forEach(p => {
+            const pph = getPhoto(p.auteur);
+            const pavHtml = pph ? `<div class="post-av"><img src="${pph}"></div>` : `<div class="post-av ${ac(p.auteur)}">${p.auteur.charAt(0).toUpperCase()}</div>`;
+            const d = new Date(p.date);
+            const dt = d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear() + ' à ' + d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+            const liked = p.likes?.includes(me);
+            h += `<div class="post-card">
+                <div class="post-hdr">${pavHtml}<div class="post-meta"><div class="post-author">${p.auteur}</div><div class="post-time">${dt}</div></div></div>
+                ${p.texte ? `<div class="post-body">${p.texte}</div>` : ''}
+                ${p.img ? `<img class="post-img" src="${p.img}">` : ''}
+                <div class="post-actions">
+                    <button class="post-action-btn${liked ? ' liked' : ''}" onclick="likerPub('${p._id}')">❤️ ${p.likes?.length || 0}</button>
+                    <button class="post-action-btn" onclick="supprimerPub('${p._id}')">🗑️ Supprimer</button>
+                </div>
+            </div>`;
+        });
+    }
+    content.innerHTML = h;
+}
+
+function ajouterPubImg(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+        pubImgData = ev.target.result;
+        document.getElementById('pub-preview-img').src = pubImgData;
+        document.getElementById('pub-preview').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+function supprimerPubImg() {
+    pubImgData = null;
+    document.getElementById('pub-preview').style.display = 'none';
+    document.getElementById('pub-img-input').value = '';
+}
+
+async function publier() {
+    const texte = document.getElementById('pub-text').value.trim();
+    if (!texte && !pubImgData) {
+        alert('Écris quelque chose ou ajoute une image');
+        return;
+    }
+    const publication = {
+        auteur: me,
+        texte: texte,
+        img: pubImgData,
+        date: new Date().toISOString(),
+        likes: []
+    };
+    try {
+        await apiCall('/api/publications', 'POST', publication);
+        pubImgData = null;
+        document.getElementById('pub-text').value = '';
+        document.getElementById('pub-preview').style.display = 'none';
+        await chargerDonnees();
+        updateAvatarsUI();
+        goCompteTab('pubs');
+    } catch (err) {
+        console.error('Erreur publication:', err);
+    }
+}
+
+async function likerPub(id) {
+    try {
+        await apiCall(`/api/publications/${id}/like`, 'PUT', { userId: me });
+        await chargerDonnees();
+        goCompteTab('pubs');
+        if (tab === 'public') renderVideoFeed();
+    } catch (err) {
+        console.error('Erreur like:', err);
+    }
+}
+
+function supprimerPub(id) {
+    ouvrirConfirm('🗑️', 'Supprimer la publication', 'Veux-tu vraiment supprimer cette publication ?', 'Supprimer', async () => {
+        pubs = pubs.filter(p => p._id !== id);
+        await apiCall(`/api/publications/${id}`, 'DELETE').catch(() => {});
+        await chargerDonnees();
+        updateAvatarsUI();
+        goCompteTab('pubs');
+    });
+}
+
+// ========== PUBLIÉS (photos + vidéos) ==========
+async function renderPublies(content) {
+    const myPubs = pubs.filter(p => p.auteur === me && p.img).sort((a, b) => new Date(b.date) - new Date(a.date));
+    const myVids = vids.filter(v => v.auteur === me).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    if (!myPubs.length && !myVids.length) {
+        content.innerHTML = '<div class="dl-empty">🖼️<br><br>Tu n\'as pas encore de publications.<br>Publie une photo ou une vidéo !</div>';
+        return;
+    }
+
+    let h = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;">';
+
+    for (const p of myPubs) {
+        h += `<div style="position:relative;aspect-ratio:1;background:#f0f2f5;border-radius:4px;overflow:hidden;">
+            <img src="${p.img}" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy">
+            <div style="position:absolute;top:4px;right:4px;">
+                <button onclick="confirmerSuppPub('${p._id}','pub')" style="width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.6);border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+            </div>
+            ${p.texte ? `<div style="position:absolute;bottom:0;left:0;right:0;padding:6px;background:rgba(0,0,0,0.5);color:#fff;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.texte}</div>` : ''}
+        </div>`;
+    }
+
+    for (const v of myVids) {
+        const url = await getBlobURL(v.id);
+        h += `<div style="position:relative;aspect-ratio:1;background:#111;border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+            ${url ? `<video src="${url}" style="width:100%;height:100%;object-fit:cover;" muted></video>` : '<span style="font-size:28px;">🎬</span>'}
+            <div style="position:absolute;top:4px;right:4px;">
+                <button onclick="confirmerSuppPub('${v.id}','vid')" style="width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.6);border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+            </div>
+            <div style="position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.5);color:#fff;font-size:10px;padding:2px 6px;border-radius:10px;">🎬 ${v.title || 'Vidéo'}</div>
+        </div>`;
+    }
+
+    h += '</div>';
+    content.innerHTML = h;
+}
+
+function confirmerSuppPub(id, type) {
+    const label = type === 'vid' ? 'cette vidéo' : 'cette publication';
+    ouvrirConfirm('🗑️', 'Supprimer', `Veux-tu vraiment supprimer ${label} ?`, 'Supprimer', async () => {
+        if (type === 'vid') {
+            vids = vids.filter(v => v.id !== id);
+            await deleteVidBlob(id);
+            if (vidBlobURLs[id]) {
+                URL.revokeObjectURL(vidBlobURLs[id]);
+                delete vidBlobURLs[id];
+            }
+            await apiCall(`/api/videos/${id}`, 'DELETE').catch(() => {});
+        } else {
+            pubs = pubs.filter(p => p._id !== id);
+            await apiCall(`/api/publications/${id}`, 'DELETE').catch(() => {});
+        }
+        await chargerDonnees();
+        updateAvatarsUI();
+        goCompteTab('publies');
+    });
+}
+
+// ========== TÉLÉCHARGEMENTS ==========
+function renderDl(content) {
+    let h = `<div class="dl-upload-zone" onclick="document.getElementById('dl-file-input').click()">
+        <div style="font-size:36px;">📁</div>
+        <p>Clique ici pour ajouter un fichier à partager</p>
+        <input type="file" id="dl-file-input" onchange="ajouterFichier(event)">
+    </div>`;
+
+    if (!dls.length) {
+        h += '<div class="dl-empty">📥<br><br>Aucun fichier partagé pour le moment.</div>';
+    } else {
+        dls.forEach(f => {
+            const icon = f.type.startsWith('image/') ? '🖼️' : f.type.includes('pdf') ? '📄' : f.type.includes('video') ? '🎬' : f.type.includes('audio') ? '🎵' : '📎';
+            const size = f.size > 1024 * 1024 ? (f.size / (1024 * 1024)).toFixed(1) + ' Mo' : (f.size / 1024).toFixed(0) + ' Ko';
+            const d = new Date(f.date);
+            const dt = d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear();
+            h += `<div class="dl-card">
+                <div class="dl-icon">${icon}</div>
+                <div class="dl-info">
+                    <div class="dl-name">${f.name}</div>
+                    <div class="dl-meta">${size} · Ajouté le ${dt} par ${f.auteur}</div>
+                </div>
+                <button class="dl-btn" onclick="telechargerFichier('${f.id}')">⬇ Télécharger</button>
+            </div>`;
+        });
+    }
+    content.innerHTML = h;
+}
+
+function ajouterFichier(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+        dls.push({
+            id: 'd_' + Date.now(),
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            data: ev.target.result,
+            date: new Date().toISOString(),
+            auteur: me
+        });
+        save();
+        updateAvatarsUI();
+        goCompteTab('dl');
+    };
+    reader.readAsDataURL(file);
+}
+
+function telechargerFichier(id) {
+    const f = dls.find(d => d.id === id);
+    if (!f) return;
+    const a = document.createElement('a');
+    a.href = f.data;
+    a.download = f.name;
+    a.click();
+}
+
+// ========== VIDÉOS (IndexedDB pour stockage) ==========
+let _db = null;
+
+function openDB() {
+    return new Promise((res, rej) => {
+        if (_db) { res(_db); return; }
+        const req = indexedDB.open('notechat_vids', 3);
+        req.onupgradeneeded = e => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('vids'))
+                db.createObjectStore('vids', { keyPath: 'id' });
+        };
+        req.onsuccess = e => { _db = e.target.result; res(_db); };
+        req.onerror = e => rej(e);
+    });
+}
+
+async function saveVidData(id, base64) {
+    const db = await openDB();
+    return new Promise((res, rej) => {
+        const tx = db.transaction('vids', 'readwrite');
+        tx.objectStore('vids').put({ id, data: base64 });
+        tx.oncomplete = res;
+        tx.onerror = rej;
+    });
+}
+
+async function getVidData(id) {
+    const db = await openDB();
+    return new Promise((res) => {
+        const req = db.transaction('vids', 'readonly').objectStore('vids').get(id);
+        req.onsuccess = e => res(e.target.result?.data || null);
+        req.onerror = () => res(null);
+    });
+}
+
+async function deleteVidBlob(id) {
+    const db = await openDB();
+    return new Promise((res) => {
+        const tx = db.transaction('vids', 'readwrite');
+        tx.objectStore('vids').delete(id);
+        tx.oncomplete = res;
+        tx.onerror = () => res();
+    });
+}
+
+async function getBlobURL(id) {
+    if (vidBlobURLs[id]) return vidBlobURLs[id];
+    const base64 = await getVidData(id);
+    if (!base64) return null;
+    try {
+        const arr = base64.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) { u8arr[n] = bstr.charCodeAt(n); }
+        const blob = new Blob([u8arr], { type: mime });
+        const url = URL.createObjectURL(blob);
+        vidBlobURLs[id] = url;
+        return url;
+    } catch (e) {
+        vidBlobURLs[id] = base64;
+        return base64;
+    }
+}
+
+async function renderVideoFeed() {
+    const feed = document.getElementById('video-feed');
+    const items = [];
+
+    for (const v of vids) {
+        const url = await getBlobURL(v.id);
+        if (url) items.push({ ...v, data: url, _kind: 'video' });
+    }
+
+    pubs.filter(p => p.img).forEach(p => items.push({
+        _id: p._id, id: p._id, auteur: p.auteur, title: p.texte || '', desc: '',
+        data: p.img, date: p.date, likes: p.likes || [], dislikes: [], comments: p.comments || [],
+        _kind: 'image'
+    }));
+
+    items.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    if (!items.length) {
+        feed.innerHTML = '<div class="video-empty-dark" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:80vh;">🏠<br><br>Aucune publication pour le moment.<br>Publie une vidéo ou une image dans Compte !</div>';
+        return;
+    }
+
+    feed.innerHTML = items.map(v => {
+        const ph = getPhoto(v.auteur);
+        const avHtml = ph
+            ? `<div class="vid-author-av"><img src="${ph}"></div>`
+            : `<div class="vid-author-av ${ac(v.auteur)}">${v.auteur.charAt(0).toUpperCase()}</div>`;
+
+        const liked = (v.likes || []).includes(me);
+        const disliked = (v.dislikes || []).includes(me);
+
+        const mediaHtml = v._kind === 'video'
+            ? `<video src="${v.data}" loop playsinline muted preload="auto" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:14px;" onclick="toggleVidPlay(this)"></video>`
+            : `<img src="${v.data}" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:14px;">`;
+
+        return `<div class="vid-item" id="vi-${v.id || v._id}" data-vid-src="${v._kind === 'video' ? v.data : ''}">
+            <div class="vid-inner">
+                <div style="position:relative;width:100%;height:100%;border-radius:14px;overflow:hidden;">
+                    ${mediaHtml}
+                    <div class="vid-overlay-bottom">
+                        <div class="vid-author-row" onclick="ouvrirProfil('${v.auteur}')" style="cursor:pointer;">
+                            ${avHtml}
+                            <span class="vid-author-name">@${v.auteur}</span>
+                        </div>
+                        ${v.title ? `<div class="vid-title-txt">${v.title}</div>` : ''}
+                        ${v.desc ? `<div class="vid-desc-txt">${v.desc}</div>` : ''}
+                    </div>
+                </div>
+                <div class="vid-actions-right">
+                    <button class="vid-btn${liked ? ' liked' : ''}" onclick="likerItem('${v.id || v._id}','${v._kind}')">
+                        <div class="vid-btn-icon">👍</div>
+                        <span class="vid-btn-lbl">${(v.likes || []).length}</span>
+                    </button>
+                    <button class="vid-btn${disliked ? ' disliked' : ''}" onclick="dislikerItem('${v.id || v._id}','${v._kind}')">
+                        <div class="vid-btn-icon">👎</div>
+                        <span class="vid-btn-lbl">Je n'aime</span>
+                    </button>
+                    <button class="vid-btn" onclick="ouvrirCommentaires('${v.id || v._id}','${v._kind}')">
+                        <div class="vid-btn-icon">💬</div>
+                        <span class="vid-btn-lbl">${(v.comments || []).length}</span>
+                    </button>
+                    ${v._kind === 'video' ? `<button class="vid-btn" onclick="telechargerVideo('${v.id}')">
+                        <div class="vid-btn-icon">⬇️</div>
+                        <span class="vid-btn-lbl">Télécharger</span>
+                    </button>` : ''}
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+
+    setupVideoAutoplay();
+}
+
+function stopAllVideos() {
+    document.querySelectorAll('.vid-item video').forEach(v => {
+        v.pause();
+        v.muted = true;
+    });
+}
+
+function toggleVidPlay(video) {
+    if (video.paused) {
+        video.muted = false;
+        video.play().catch(() => {});
+    } else {
+        video.pause();
+        video.muted = true;
+    }
+}
+
+let _currentVideo = null;
+
+function playVideoInView() {
+    const feed = document.querySelector('.video-feed');
+    if (!feed) return;
+    const videos = feed.querySelectorAll('.vid-item video');
+    let bestVideo = null;
+    let bestVisible = 0;
+
+    videos.forEach(video => {
+        const rect = video.getBoundingClientRect();
+        const visible = Math.max(0, Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0));
+        if (visible > bestVisible) {
+            bestVisible = visible;
+            bestVideo = video;
+        }
+    });
+
+    if (bestVideo && bestVideo !== _currentVideo) {
+        videos.forEach(v => {
+            v.pause();
+            v.currentTime = 0;
+            v.muted = true;
+        });
+        bestVideo.muted = false;
+        bestVideo.play().catch(() => {});
+        _currentVideo = bestVideo;
+    }
+}
+
+function setupVideoAutoplay() {
+    const feed = document.querySelector('.video-feed');
+    if (!feed) return;
+    feed.addEventListener('scroll', playVideoInView, { passive: true });
+    setTimeout(playVideoInView, 600);
+}
+
+// ========== VIDÉO MODAL ==========
+function ouvrirVidModal() {
+    vidData = null;
+    document.getElementById('vid-title').value = '';
+    document.getElementById('vid-desc').value = '';
+    document.getElementById('vid-drop-txt').textContent = 'Clique pour choisir une vidéo depuis ta galerie';
+    document.getElementById('vid-drop-zone').classList.remove('has-video');
+    document.getElementById('vid-file-inp').value = '';
+    document.getElementById('vid-modal').classList.add('open');
+}
+
+function fermerVidModal() {
+    document.getElementById('vid-modal').classList.remove('open');
+    vidData = null;
+}
+
+function onVidSelected(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    vidData = file;
+    document.getElementById('vid-drop-txt').innerHTML = `<span class="vid-ready">✅ ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} Mo)</span>`;
+    document.getElementById('vid-drop-zone').classList.add('has-video');
+}
+
+async function publierVideo() {
+    const title = document.getElementById('vid-title').value.trim();
+    const desc = document.getElementById('vid-desc').value.trim();
+    if (!vidData) {
+        document.getElementById('vid-drop-txt').innerHTML = '<span style="color:#f02849">⚠️ Sélectionne une vidéo d\'abord</span>';
+        return;
+    }
+    document.getElementById('vid-drop-txt').innerHTML = '<span style="color:#0084ff">⏳ Enregistrement en cours...</span>';
+    const id = 'v_' + Date.now();
+    try {
+        const base64 = await new Promise((res, rej) => {
+            const reader = new FileReader();
+            reader.onload = ev => res(ev.target.result);
+            reader.onerror = rej;
+            reader.readAsDataURL(vidData);
+        });
+        await saveVidData(id, base64);
+        const video = {
+            id, auteur: me, title, desc,
+            date: new Date().toISOString(),
+            likes: [], dislikes: [], comments: []
+        };
+        await apiCall('/api/videos', 'POST', video);
+        vidData = null;
+        fermerVidModal();
+        await chargerDonnees();
+        updateAvatarsUI();
+        renderVideoFeed();
+    } catch (err) {
+        document.getElementById('vid-drop-txt').innerHTML = '<span style="color:#f02849">⚠️ Erreur — essaie une vidéo plus petite</span>';
+        console.error(err);
+    }
+}
+
+function likerItem(id, kind) {
+    if (kind === 'video') {
+        likerVideo(id);
+    } else {
+        likerPub(id);
+        renderVideoFeed();
+    }
+}
+
+function dislikerItem(id, kind) {
+    if (kind === 'video') {
+        dislikerVideo(id);
+    }
+}
+
+async function likerVideo(id) {
+    const v = vids.find(v => v.id === id);
+    if (!v) return;
+    if (!v.likes) v.likes = [];
+    if (!v.dislikes) v.dislikes = [];
+    if (v.likes.includes(me)) {
+        v.likes = v.likes.filter(l => l !== me);
+    } else {
+        v.likes.push(me);
+        v.dislikes = v.dislikes.filter(l => l !== me);
+        if (v.auteur !== me) addNotifForUser(v.auteur, '👍', `<b>${me}</b> a aimé ta vidéo${v.title ? ' "' + v.title + '"' : ''}`, 'public');
+    }
+    await apiCall(`/api/videos/${id}/like`, 'PUT', { userId: me }).catch(() => {});
+    await chargerDonnees();
+    renderVideoFeed();
+}
+
+async function dislikerVideo(id) {
+    const v = vids.find(v => v.id === id);
+    if (!v) return;
+    if (!v.likes) v.likes = [];
+    if (!v.dislikes) v.dislikes = [];
+    if (v.dislikes.includes(me)) {
+        v.dislikes = v.dislikes.filter(l => l !== me);
+    } else {
+        v.dislikes.push(me);
+        v.likes = v.likes.filter(l => l !== me);
+    }
+    await apiCall(`/api/videos/${id}/dislike`, 'PUT', { userId: me }).catch(() => {});
+    await chargerDonnees();
+    renderVideoFeed();
+}
+
+async function telechargerVideo(id) {
+    const v = vids.find(v => v.id === id);
+    if (!v) return;
+    const fname = (v.title || 'video') + '.mp4';
+    const url = await getBlobURL(id);
+    if (url) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fname;
+        a.click();
+    }
+    if (!dls.find(d => d.srcId === id)) {
+        dls.push({
+            id: 'd_' + Date.now(),
+            srcId: id,
+            name: fname,
+            type: 'video/mp4',
+            size: 0,
+            data: null,
+            date: new Date().toISOString(),
+            auteur: me
+        });
+        save();
+    }
+    goTab('compte');
+    goCompteTab('dl');
+}
+
+// ========== NOTIFICATIONS ==========
+async function getNotifs() {
+    try {
+        return await apiCall(`/api/notifications/${me}`);
+    } catch (err) {
+        return [];
+    }
+}
+
+async function addNotifForUser(targetUser, icon, txt, targetTab) {
+    try {
+        const notif = {
+            id: 'n_' + Date.now(),
+            icon,
+            txt,
+            date: new Date().toISOString(),
+            read: false,
+            tab: targetTab
+        };
+        await apiCall(`/api/notifications/${targetUser}`, 'POST', notif);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+async function countUnreadNotifs() {
+    const notifs = await getNotifs();
+    return notifs.filter(n => !n.read).length;
+}
+
+async function updateNotifBadge() {
+    const c = await countUnreadNotifs();
+    const b = document.getElementById('notif-badge');
+    if (!b) return;
+    if (c > 0) {
+        b.textContent = c > 99 ? '99+' : c;
+        b.style.display = 'inline-flex';
+    } else {
+        b.style.display = 'none';
+    }
+}
+
+async function markNotifsRead() {
+    const notifs = await getNotifs();
+    notifs.forEach(n => n.read = true);
+    await apiCall(`/api/notifications/${me}`, 'PUT', notifs);
+    updateNotifBadge();
+}
+
+async function clearNotifs() {
+    await apiCall(`/api/notifications/${me}`, 'PUT', []);
+    updateNotifBadge();
+    renderNotifs();
+}
+
+function timeAgo(dateStr) {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return "à l'instant";
+    if (m < 60) return m + 'min';
+    const h = Math.floor(m / 60);
+    if (h < 24) return h + 'h';
+    return Math.floor(h / 24) + 'j';
+}
+
+async function renderNotifs() {
+    const list = document.getElementById('notif-list');
+    if (!list) return;
+    const notifs = await getNotifs();
+    if (!notifs.length) {
+        list.innerHTML = '<div class="notif-empty">🔔<br><br>Aucune notification pour le moment.</div>';
+        return;
+    }
+    list.innerHTML = notifs.map(n => `
+        <div class="notif-item${n.read ? '' : ' unread'}">
+            <div class="notif-icon">${n.icon}</div>
+            <div class="notif-body">
+                <div class="notif-txt">${n.txt}</div>
+                <div class="notif-time">${timeAgo(n.date)}</div>
+            </div>
+            ${n.read ? '' : '<div class="notif-dot"></div>'}
+        </div>`).join('');
+}
+
+async function renderNotifsInCompte(content) {
+    const notifs = await getNotifs();
+    notifs.forEach(n => n.read = true);
+    await apiCall(`/api/notifications/${me}`, 'PUT', notifs);
+    updateNotifBadge();
+    if (!notifs.length) {
+        content.innerHTML = '<div class="notif-empty">🔔<br><br>Aucune notification pour le moment.</div>';
+        return;
+    }
+    content.innerHTML = `
+        <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+            <button class="notif-clear-btn" onclick="clearNotifsCompte()" style="background:#f0f2f5;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:#0084ff;border:none;cursor:pointer;">🗑 Tout effacer</button>
+        </div>` +
+        notifs.map(n => `
+        <div class="notif-item" style="margin-bottom:8px;">
+            <div class="notif-icon">${n.icon}</div>
+            <div class="notif-body">
+                <div class="notif-txt">${n.txt}</div>
+                <div class="notif-time">${timeAgo(n.date)}</div>
+            </div>
+        </div>`).join('');
+}
+
+async function clearNotifsCompte() {
+    await apiCall(`/api/notifications/${me}`, 'PUT', []);
+    updateNotifBadge();
+    goCompteTab('notifs');
+}
+
+// ========== MESSAGES VOCAUX ==========
+let _mediaRecorder = null;
+let _audioChunks = [];
+let _isRecording = false;
+let _recordStart = null;
+let _recordTimer = null;
+
+function renderVocalBubble(m) {
+    const dur = m.vocalDur || 0;
+    const min = Math.floor(dur / 60).toString().padStart(2, '0');
+    const sec = (dur % 60).toString().padStart(2, '0');
+    const bars = Array.from({ length: 24 }, (_, i) => {
+        const h = 8 + Math.floor(Math.abs(Math.sin(i * 0.8 + m.id.charCodeAt(0))) * 20);
+        return `<div class="voice-bar" style="height:${h}px;"></div>`;
+    }).join('');
+    const uid = 'va_' + m.id.replace(/[^a-z0-9]/gi, '');
+    return `<div class="voice-bubble" onclick="playVocal('${uid}')">
+        <audio id="${uid}" src="${m.vocal}"></audio>
+        <button class="voice-play-btn" id="btn_${uid}">▶</button>
+        <div class="voice-waveform">${bars}</div>
+        <span class="voice-duration">${min}:${sec}</span>
+    </div>`;
+}
+
+function playVocal(uid) {
+    const audio = document.getElementById(uid);
+    const btn = document.getElementById('btn_' + uid);
+    if (!audio) return;
+    if (audio.paused) {
+        document.querySelectorAll('.voice-bubble audio').forEach(a => {
+            if (a.id !== uid && !a.paused) {
+                a.pause();
+                a.currentTime = 0;
+                const b = document.getElementById('btn_' + a.id);
+                if (b) b.textContent = '▶';
+            }
+        });
+        audio.play();
+        btn.textContent = '⏸';
+        audio.onended = () => { btn.textContent = '▶'; };
+    } else {
+        audio.pause();
+        audio.currentTime = 0;
+        btn.textContent = '▶';
+    }
+}
+
+function toggleVoice() {
+    if (_isRecording) stopVoice();
+    else startVoice();
+}
+
+function startVoice() {
+    if (!navigator.mediaDevices?.getUserMedia) {
+        showVoiceError('Microphone non supporté');
+        return;
+    }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        _audioChunks = [];
+        const mimeType =
+            MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' :
+            MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' :
+            MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '';
+        _mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+        _mediaRecorder.ondataavailable = e => { if (e.data.size > 0) _audioChunks.push(e.data); };
+        _mediaRecorder.onstop = () => {
+            const type = _mediaRecorder.mimeType || 'audio/webm';
+            const blob = new Blob(_audioChunks, { type });
+            stream.getTracks().forEach(t => t.stop());
+            envoyerVocal(blob);
+        };
+        _mediaRecorder.start(100);
+        _isRecording = true;
+        _recordStart = Date.now();
+        const btn = document.getElementById('voice-btn');
+        btn.classList.add('recording');
+        btn.textContent = '⏹';
+        btn.title = 'Arrêter';
+        const inp = document.getElementById('minp');
+        inp.placeholder = '🔴 Enregistrement...';
+        inp.disabled = true;
+        _recordTimer = setInterval(() => {
+            const s = Math.floor((Date.now() - _recordStart) / 1000);
+            const mm = Math.floor(s / 60).toString().padStart(2, '0');
+            const ss = (s % 60).toString().padStart(2, '0');
+            const i = document.getElementById('minp');
+            if (i) i.placeholder = `🔴 ${mm}:${ss}`;
+        }, 500);
+    }).catch(() => { showVoiceError('Accès au micro refusé — autorise-le dans le navigateur'); });
+}
+
+function stopVoice() {
+    if (!_mediaRecorder || !_isRecording) return;
+    _mediaRecorder.stop();
+    _isRecording = false;
+    clearInterval(_recordTimer);
+    const btn = document.getElementById('voice-btn');
+    btn.classList.remove('recording');
+    btn.textContent = '🎤';
+    btn.title = 'Message vocal';
+    const inp = document.getElementById('minp');
+    inp.placeholder = 'Aa';
+    inp.disabled = false;
+}
+
+async function envoyerVocal(blob) {
+    if ((tab === 'prive' || tab === 'grp') && !convId) return;
+    const reader = new FileReader();
+    reader.onload = async ev => {
+        const dur = Math.max(1, Math.round((Date.now() - _recordStart) / 1000));
+        const message = {
+            id: Date.now() + '_' + Math.random(),
+            auteur: me,
+            texte: '',
+            vocal: ev.target.result,
+            vocalDur: dur,
+            date: new Date().toISOString(),
+            type: convType,
+            dest: convId,
+            exp: tab === 'eph' ? Date.now() + 86400000 : null,
+            likes: []
+        };
+        await apiCall('/api/messages', 'POST', message);
+        await chargerDonnees();
+        loadMsgs();
+    };
+    reader.readAsDataURL(blob);
+}
+
+function showVoiceError(msg) {
+    const inp = document.getElementById('minp');
+    const old = inp.placeholder;
+    inp.placeholder = '⚠️ ' + msg;
+    inp.style.color = '#f02849';
+    setTimeout(() => {
+        inp.placeholder = old;
+        inp.style.color = '';
+    }, 3000);
+}
+
+// ========== EMOJI PICKER ==========
+const EMOJI_CATS = {
+    '😊': ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕'],
+    '👍': ['👋','🤚','🖐','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','🦿','🦵','🦶','👂','🦻','👃','🫀','🫁','🧠','🦷','🦴','👀','👁','👅','👄','💋'],
+    '❤️': ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☪️','🕉','☸️','✡️','🔯','🕎','☯️','☦️','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','🆔','⚛️','🉑','☢️','☣️','📴','📳'],
+    '🔥': ['🔥','💥','✨','🌟','⭐','🌠','💫','🎆','🎇','🌈','⚡','❄️','💧','🌊','🌀','🌪','🌫','🌬','🌂','☂️','⛱','⚡','🌟','💫','✨','🎉','🎊','🎈','🎁','🎀','🎗','🎟','🎫','🏆','🥇','🥈','🥉','🏅','🎖','🎗','🎪','🤹','🎭','🎨','🎬','🎤','🎧','🎼','🎵','🎶'],
+    '🐶': ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐽','🐸','🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐤','🐣','🐥','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🪲','🦟','🦗','🪳','🕷','🦂','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈'],
+    '🍎': ['🍎','🍊','🍋','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶','🫑','🧄','🧅','🥔','🌽','🍠','🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🌭','🍔','🍟','🍕','🫓','🥪','🥙','🧆','🌮','🌯','🫔','🥗','🥘','🫕','🥫','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🦪','🍤','🍙','🍚','🍘','🍥','🥮','🍢','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪'],
+};
+let emojiCatKeys = Object.keys(EMOJI_CATS);
+let currentCat = emojiCatKeys[0];
+
+function toggleEmojiPicker(e) {
+    e.stopPropagation();
+    const picker = document.getElementById('emoji-picker');
+    if (!picker.classList.contains('open')) {
+        buildEmojiPicker();
+        picker.classList.add('open');
+    } else {
+        picker.classList.remove('open');
+    }
+}
+
+function buildEmojiPicker() {
+    const catsEl = document.getElementById('emoji-cats');
+    const gridEl = document.getElementById('emoji-grid');
+    catsEl.innerHTML = emojiCatKeys.map(k => `
+        <button class="emoji-cat-btn${k === currentCat ? ' active' : ''}" onclick="selectEmojiCat('${k}',event)" title="${k}">${k}</button>
+    `).join('');
+    gridEl.innerHTML = (EMOJI_CATS[currentCat] || []).map(em =>
+        `<div class="emoji-item" onclick="insertEmoji('${em}',event)">${em}</div>`
+    ).join('');
+}
+
+function selectEmojiCat(cat, event) {
+    if (event) event.stopPropagation();
+    currentCat = cat;
+    buildEmojiPicker();
+}
+
+function insertEmoji(em, event) {
+    if (event) event.stopPropagation();
+    const inp = document.getElementById('minp');
+    const start = inp.selectionStart;
+    const end = inp.selectionEnd;
+    const val = inp.value;
+    inp.value = val.slice(0, start) + em + val.slice(end);
+    inp.focus();
+    inp.selectionStart = inp.selectionEnd = start + em.length;
+}
+
+document.addEventListener('click', e => {
+    if (!e.target.closest('.input-bar')) {
+        const picker = document.getElementById('emoji-picker');
+        if (picker) picker.classList.remove('open');
+    }
+});
+
+// ========== COMMENTAIRES ==========
+let _currentCommentItemId = null;
+let _currentCommentKind = null;
+
+function ouvrirCommentaires(itemId, kind) {
+    _currentCommentItemId = itemId;
+    _currentCommentKind = kind;
+    document.getElementById('comment-inp').value = '';
+    renderCommentaires();
+    document.getElementById('comments-modal').classList.add('open');
+}
+
+function fermerCommentaires() {
+    document.getElementById('comments-modal').classList.remove('open');
+    _currentCommentItemId = null;
+    _currentCommentKind = null;
+}
+
+function getCommentItem() {
+    if (_currentCommentKind === 'video') {
+        return vids.find(v => v.id === _currentCommentItemId);
+    } else {
+        return pubs.find(p => p._id === _currentCommentItemId);
+    }
+}
+
+async function renderCommentaires() {
+    const item = getCommentItem();
+    const list = document.getElementById('comments-list');
+    if (!item) {
+        list.innerHTML = '<div class="comments-empty">Contenu introuvable</div>';
+        return;
+    }
+    const comments = item.comments || [];
+    if (!comments.length) {
+        list.innerHTML = '<div class="comments-empty">💬<br><br>Aucun commentaire pour le moment.<br>Sois le premier à commenter !</div>';
+        return;
+    }
+    list.innerHTML = comments.map(c => {
+        const ph = getPhoto(c.auteur);
+        const avHtml = ph
+            ? `<div class="comment-av"><img src="${ph}"></div>`
+            : `<div class="comment-av ${ac(c.auteur)}">${c.auteur.charAt(0).toUpperCase()}</div>`;
+        const d = new Date(c.date);
+        const t = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+        const isMe = c.auteur === me;
+        return `<div class="comment-item">
+            ${avHtml}
+            <div class="comment-body">
+                <span class="comment-author">${c.auteur}</span>
+                <div class="comment-text">${c.texte}</div>
+                <div class="comment-time">${t}</div>
+            </div>
+            ${isMe ? `<button class="comment-del" onclick="supprimerCommentaire('${c.id}')">✕</button>` : ''}
+        </div>`;
+    }).join('');
+    list.scrollTop = list.scrollHeight;
+}
+
+async function envoyerCommentaire() {
+    if (!me) return;
+    const texte = document.getElementById('comment-inp').value.trim();
+    if (!texte) return;
+    const item = getCommentItem();
+    if (!item) return;
+    if (!item.comments) item.comments = [];
+    const comment = {
+        id: 'c_' + Date.now(),
+        auteur: me,
+        texte,
+        date: new Date().toISOString()
+    };
+    item.comments.push(comment);
+    
+    if (_currentCommentKind === 'video') {
+        await apiCall(`/api/videos/${item.id}/comment`, 'POST', comment).catch(() => {});
+    } else {
+        await apiCall(`/api/publications/${item._id}/comment`, 'POST', comment).catch(() => {});
+    }
+    
+    if (item.auteur !== me) {
+        addNotifForUser(item.auteur, '💬', `<b>${me}</b> a commenté ta publication`, 'compte');
+    }
+    await chargerDonnees();
+    document.getElementById('comment-inp').value = '';
+    renderCommentaires();
+    renderVideoFeed();
+}
+
+async function supprimerCommentaire(commentId) {
+    const item = getCommentItem();
+    if (!item) return;
+    item.comments = (item.comments || []).filter(c => c.id !== commentId);
+    if (_currentCommentKind === 'video') {
+        await apiCall(`/api/videos/${item.id}/comment/${commentId}`, 'DELETE').catch(() => {});
+    } else {
+        await apiCall(`/api/publications/${item._id}/comment/${commentId}`, 'DELETE').catch(() => {});
+    }
+    await chargerDonnees();
+    renderCommentaires();
+    renderVideoFeed();
+}
+
+// ========== PROFIL UTILISATEUR ==========
+function ouvrirProfil(auteur) {
+    if (!auteur) return;
+    if (auteur === me) {
+        goTab('compte');
+        return;
+    }
+    renderProfil(auteur);
+    document.getElementById('profile-modal').classList.add('open');
+}
+
+function fermerProfil() {
+    document.getElementById('profile-modal').classList.remove('open');
+}
+
+async function renderProfil(auteur) {
+    const body = document.getElementById('profile-modal-body');
+    const ph = getPhoto(auteur);
+    const avHtml = ph
+        ? `<div class="pm-av"><img src="${ph}"></div>`
+        : `<div class="pm-av ${ac(auteur)}">${auteur.charAt(0).toUpperCase()}</div>`;
+
+    const nbPubs = pubs.filter(p => p.auteur === auteur).length + vids.filter(v => v.auteur === auteur).length;
+    const user = users.find(u => u.pseudo === auteur);
+    const nbAmis = (user?.amis || []).length;
+    const nbAbonnes = users.filter(u => u.amis && u.amis.includes(auteur)).length;
+    const jeLesSuis = (users.find(u => u.pseudo === me)?.amis || []).includes(auteur);
+
+    const sesPubs = pubs.filter(p => p.auteur === auteur && p.img).sort((a, b) => new Date(b.date) - new Date(a.date));
+    const sesVids = vids.filter(v => v.auteur === auteur).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    let gridHtml = '';
+    if (!sesPubs.length && !sesVids.length) {
+        gridHtml = '<div class="pm-pub-empty">Aucune publication</div>';
+    } else {
+        sesPubs.forEach(p => {
+            gridHtml += `<div class="pm-pub-item"><img src="${p.img}" loading="lazy"></div>`;
+        });
+        sesVids.forEach(v => {
+            gridHtml += `<div class="pm-pub-item" style="background:#111;display:flex;align-items:center;justify-content:center;font-size:28px;">🎬</div>`;
+        });
+    }
+
+    body.innerHTML = `
+        <div class="pm-top">
+            ${avHtml}
+            <div>
+                <div class="pm-name">${auteur}</div>
+                <div class="pm-status">● En ligne</div>
+            </div>
+        </div>
+
+        <div class="pm-stats">
+            <div class="pm-stat">
+                <div class="pm-stat-num">${nbPubs}</div>
+                <div class="pm-stat-lbl">Publications</div>
+            </div>
+            <div class="pm-stat">
+                <div class="pm-stat-num">${nbAmis}</div>
+                <div class="pm-stat-lbl">Amis</div>
+            </div>
+            <div class="pm-stat">
+                <div class="pm-stat-num">${nbAbonnes}</div>
+                <div class="pm-stat-lbl">Abonnés</div>
+            </div>
+        </div>
+
+        <button class="pm-follow-btn ${jeLesSuis ? 'unfollow' : 'follow'}" onclick="toggleFollowProfil('${auteur}')">
+            ${jeLesSuis ? '✅ Suivi' : '➕ Suivre'}
+        </button>
+
+        <div class="pm-pubs-title">Publications</div>
+        <div class="pm-pubs-grid">${gridHtml}</div>
+    `;
+}
+
+async function toggleFollowProfil(auteur) {
+    const user = await apiCall(`/api/users/${me}`);
+    if (!user.amis) user.amis = [];
+    if (user.amis.includes(auteur)) {
+        user.amis = user.amis.filter(a => a !== auteur);
+    } else {
+        user.amis.push(auteur);
+        addNotifForUser(auteur, '👤', `<b>${me}</b> s'est abonné à ton compte`, 'compte');
+    }
+    await apiCall(`/api/users/${me}`, 'PUT', { amis: user.amis });
+    await chargerDonnees();
+    renderProfil(auteur);
+    updateAvatarsUI();
+    renderVideoFeed();
+}
+
+// ========== INITIALISATION ==========
+window.addEventListener('load', async () => {
+    const sMe = localStorage.getItem('nc_me');
+    if (sMe) {
+        me = sMe;
+        try {
+            await chargerDonnees();
+            seen = JSON.parse(localStorage.getItem('nc_seen_' + me)) || [];
+            ouvrirApp();
+        } catch (err) {
+            console.error('Erreur chargement auto:', err);
+        }
+    }
+});
+
+setInterval(async () => {
+    if (!me) return;
+    await chargerDonnees();
+    badge();
+    updateNotifBadge();
+    if (tab === 'public') renderVideoFeed();
+    else if (tab === 'messages') refresh();
+    else if (tab === 'notif') renderNotifs();
+    else if (tab !== 'compte' && tab !== 'aide') loadMsgs();
+}, 5000);
+
+document.addEventListener('click', e => {
+    if (!e.target.closest('.search-wrap')) document.getElementById('sdrop').style.display = 'none';
+});
+document.getElementById('inp-code').addEventListener('keypress', e => { if (e.key === 'Enter') connecter(); });
+
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stopAllVideos();
+});
+</script>
+<!-- USER PROFILE MODAL -->
+<div class="profile-modal-bg" id="profile-modal">
+    <div class="profile-modal-panel">
+        <div class="profile-modal-hdr">
+            <button class="profile-modal-close" onclick="fermerProfil()">✕</button>
+        </div>
+        <div class="profile-modal-body" id="profile-modal-body"></div>
+    </div>
+</div>
+
+<!-- COMMENTS MODAL -->
+<div class="comments-bg" id="comments-modal">
+    <div class="comments-panel">
+        <div class="comments-hdr">
+            <h3>💬 Commentaires</h3>
+            <button class="comments-close" onclick="fermerCommentaires()">✕</button>
+        </div>
+        <div class="comments-list" id="comments-list"></div>
+        <div class="comments-input-bar">
+            <input id="comment-inp" placeholder="Ajoute un commentaire..." onkeypress="if(event.key==='Enter')envoyerCommentaire()">
+            <button class="comments-send" onclick="envoyerCommentaire()">➤</button>
+        </div>
+    </div>
+</div>
+
+<!-- CONFIRM DECONNEXION -->
+<div class="confirm-bg" id="confirm-modal">
+    <div class="confirm-box">
+        <div class="confirm-icon" id="confirm-icon">🚪</div>
+        <div class="confirm-title" id="confirm-title">Confirmation</div>
+        <div class="confirm-sub" id="confirm-sub">Es-tu sûr ?</div>
+        <div class="confirm-btns">
+            <button class="confirm-no" onclick="fermerConfirm()">Annuler</button>
+            <button class="confirm-ok" id="confirm-ok-btn" onclick="confirmerDeconnexion()">Confirmer</button>
+        </div>
+    </div>
+</div>
+</body>
+</html>
