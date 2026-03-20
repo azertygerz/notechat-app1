@@ -1194,7 +1194,7 @@
 
 <script>
 // ============================================================
-// NOTECHAT - VERSION AVEC RAFRAÎCHISSEMENT AUTOMATIQUE
+// NOTECHAT - VERSION CORRIGÉE (rafraîchissement auto dans Messages)
 // ============================================================
 
 const API_URL = window.location.origin;
@@ -1543,15 +1543,23 @@ async function loadMsgs() {
     }
 }
 
-// ========== RAFRAÎCHISSEMENT AUTOMATIQUE EN TEMPS RÉEL ==========
-let lastRefreshTime = 0;
-
+// ========== RAFRAÎCHISSEMENT AUTOMATIQUE EN TEMPS RÉEL (CORRIGÉ) ==========
 async function checkForNewMessages() {
     if (!me) return;
-    if (tab !== 'prive' && tab !== 'grp' && tab !== 'public' && tab !== 'eph') return;
-    if (!convId && tab !== 'public' && tab !== 'eph') return;
+    
+    // On autorise TOUS les onglets de chat
+    if (tab !== 'prive' && tab !== 'grp' && tab !== 'public' && tab !== 'eph' && tab !== 'messages') return;
     
     try {
+        // Cas spécial pour l'onglet Messages
+        if (tab === 'messages') {
+            await chargerDonnees();
+            renderInbox(document.getElementById('conv-list'));
+            badge();
+            return;
+        }
+        
+        // Pour les autres onglets (prive, public, eph, grp)
         let url = '';
         if (tab === 'public') {
             url = '/api/messages/public/null';
@@ -1568,13 +1576,11 @@ async function checkForNewMessages() {
         const response = await fetch(url);
         const newMessages = await response.json();
         
-        // Comparer avec les messages actuels
         if (JSON.stringify(newMessages) !== JSON.stringify(msgs)) {
-            console.log('🔄 Nouveaux messages détectés !');
+            console.log('🔄 Nouveaux messages détectés dans', tab);
             msgs = newMessages;
             await loadMsgs();
             
-            // Marquer comme lus
             newMessages.forEach(m => {
                 if (m.auteur !== me && !seen.includes(m.id)) {
                     seen.push(m.id);
@@ -1583,7 +1589,6 @@ async function checkForNewMessages() {
             localStorage.setItem('nc_seen_' + me, JSON.stringify(seen));
             badge();
             
-            // Scroll en bas
             const area = document.getElementById('msgs-area');
             if (area) area.scrollTop = area.scrollHeight;
         }
@@ -3046,15 +3051,21 @@ window.addEventListener('load', async () => {
     }
 });
 
+// Intervalle global (5 secondes)
 setInterval(async () => {
     if (!me) return;
     await chargerDonnees();
     badge();
     updateNotifBadge();
-    if (tab === 'public') renderVideoFeed();
-    else if (tab === 'messages') refresh();
-    else if (tab === 'notif') renderNotifs();
-    else if (tab !== 'compte' && tab !== 'aide') loadMsgs();
+
+    // Rafraîchir l'onglet messages si on y est
+    if (tab === 'messages') {
+        renderInbox(document.getElementById('conv-list'));
+    } else if (tab === 'public') {
+        renderVideoFeed();
+    } else if (tab !== 'compte' && tab !== 'aide') {
+        loadMsgs();
+    }
 }, 5000);
 
 document.addEventListener('click', e => {
