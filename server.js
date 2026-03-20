@@ -426,8 +426,15 @@ app.put('/api/notifications/:pseudo', async (req, res) => {
     }
 });
 
-// Route principale
+// Route principale - DOIT ÊTRE À LA FIN
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 app.get('*', (req, res) => {
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: 'API non trouvée' });
+    }
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
