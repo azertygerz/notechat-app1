@@ -1467,8 +1467,14 @@ async function send() {
 
 // ========== CHARGER MESSAGES ==========
 async function loadMsgs() {
+    // Utiliser la variable globale msgs qui est mise à jour
+    if (!msgs) msgs = [];
+    
     const area = document.getElementById('msgs-area');
     const wrap = document.getElementById('input-wrap');
+    
+    // ... reste du code inchangé
+}
     
     if (tab === 'messages') {
         area.innerHTML = '<div class="empty-chat">Sélectionne un message pour répondre</div>';
@@ -1548,6 +1554,62 @@ async function loadMsgs() {
         console.error('❌ Erreur chargement messages:', err);
         area.innerHTML = '<div class="empty-chat">Erreur de chargement</div>';
     }
+	// Rafraîchissement automatique des messages toutes les 2 secondes
+let lastMsgCount = 0;
+let lastMsgId = null;
+
+async function autoRefreshMessages() {
+    if (!me) return;
+    if (tab !== 'prive' && tab !== 'grp' && tab !== 'public' && tab !== 'eph') return;
+    if (!convId && tab !== 'public' && tab !== 'eph') return;
+    
+    try {
+        let url = '';
+        if (tab === 'public') {
+            url = '/api/messages/public/null';
+        } else if (tab === 'prive' && convId) {
+            url = `/api/messages/prive/${convId}`;
+        } else if (tab === 'eph') {
+            url = '/api/messages/eph/null';
+        } else if (tab === 'grp' && convId) {
+            url = `/api/messages/grp/${convId}`;
+        } else {
+            return;
+        }
+        
+        const response = await fetch(url);
+        const newMessages = await response.json();
+        
+        // Vérifier si de nouveaux messages sont arrivés
+        const newCount = newMessages.length;
+        const lastNewMsg = newMessages[newCount - 1];
+        
+        if (newCount !== msgs.length) {
+            console.log('🔄 Nouveaux messages détectés!', newCount, 'vs', msgs.length);
+            msgs = newMessages;
+            await loadMsgs();
+            
+            // Scroll en bas
+            const area = document.getElementById('msgs-area');
+            if (area) area.scrollTop = area.scrollHeight;
+            
+            // Marquer comme lu
+            newMessages.forEach(m => {
+                if (m.auteur !== me && !seen.includes(m.id)) {
+                    seen.push(m.id);
+                }
+            });
+            localStorage.setItem('nc_seen_' + me, JSON.stringify(seen));
+            badge();
+        }
+        
+    } catch (err) {
+        console.error('Erreur auto-refresh:', err);
+    }
+}
+
+// Lancer le rafraîchissement toutes les 2 secondes
+setInterval(autoRefreshMessages, 2000);
 }
 
 // ========== BADGE MESSAGES NON LUS ==========
