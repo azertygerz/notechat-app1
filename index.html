@@ -1467,7 +1467,6 @@ async function send() {
 
 // ========== CHARGER MESSAGES ==========
 async function loadMsgs() {
-    console.log('🔄 Chargement des messages pour:', convType, convId);
     const area = document.getElementById('msgs-area');
     const wrap = document.getElementById('input-wrap');
     
@@ -1478,49 +1477,77 @@ async function loadMsgs() {
     }
     wrap.style.display = 'block';
     
-    let fil = [];
-    if (convType === 'public') {
-        fil = msgs.filter(m => m.type === 'public');
-    } else if (convType === 'prive' && convId) {
-        fil = msgs.filter(m => m.type === 'prive' && ((m.auteur === me && m.dest === convId) || (m.auteur === convId && m.dest === me)));
-    } else if (convType === 'eph') {
-        fil = msgs.filter(m => m.type === 'eph');
-    } else if (convType === 'grp' && convId) {
-        fil = msgs.filter(m => m.type === 'grp' && m.dest === convId);
-    }
-    
-    if (!fil.length) {
-        area.innerHTML = '<div class="empty-chat">Aucun message pour le moment</div>';
+    if (!convId && tab !== 'public' && tab !== 'eph') {
+        area.innerHTML = '<div class="empty-chat">Sélectionne une conversation</div>';
         return;
     }
     
-    let html = '', prev = null;
-    fil.forEach((m, i) => {
-        const isMe = m.auteur === me;
-        const d = new Date(m.date);
-        const t = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
-        const same = prev && prev.auteur === m.auteur;
-        const isLast = i === fil.length - 1 || fil[i + 1].auteur !== m.auteur;
-        
-        if (!same) {
-            if (prev) html += '</div></div>';
-            const ph = getPhoto(m.auteur);
-            const mavClass = ph ? 'msg-av' : 'msg-av ' + ac(m.auteur);
-            const mavContent = ph ? `<img src="${ph}">` : (m.auteur.charAt(0).toUpperCase());
-            html += `<div class="msg-grp${isMe ? ' me' : ''}">`;
-            if (!isMe) html += `<div class="${mavClass}">${mavContent}</div>`;
-            html += `<div class="msg-stack">`;
-            if (!isMe && (tab === 'grp' || tab === 'public')) html += `<div class="msg-author-lbl">${m.auteur}</div>`;
+    try {
+        let url = '';
+        if (tab === 'public') {
+            url = '/api/messages/public/null';
+        } else if (tab === 'prive' && convId) {
+            url = `/api/messages/prive/${convId}`;
+        } else if (tab === 'eph') {
+            url = '/api/messages/eph/null';
+        } else if (tab === 'grp' && convId) {
+            url = `/api/messages/grp/${convId}`;
+        } else {
+            area.innerHTML = '<div class="empty-chat">Chargement...</div>';
+            return;
         }
         
-        html += m.vocal ? renderVocalBubble(m) : `<div class="bubble">${m.texte}</div>`;
+        console.log('🔍 Chargement messages depuis:', url);
+        const response = await fetch(url);
+        const messages = await response.json();
+        console.log('📨 Messages reçus:', messages);
         
-        if (isLast) html += `<div class="btime">${t}</div>`;
-        prev = m;
-    });
-    html += '</div></div>';
-    area.innerHTML = html;
-    area.scrollTop = area.scrollHeight;
+        if (!messages || messages.length === 0) {
+            area.innerHTML = '<div class="empty-chat">Aucun message pour le moment</div>';
+            return;
+        }
+        
+        let html = '', prev = null;
+        
+        for (let i = 0; i < messages.length; i++) {
+            const m = messages[i];
+            const isMe = m.auteur === me;
+            const d = new Date(m.date);
+            const t = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+            const same = prev && prev.auteur === m.auteur;
+            const isLast = i === messages.length - 1 || messages[i + 1].auteur !== m.auteur;
+            
+            if (!same) {
+                if (prev) html += '</div></div>';
+                const ph = getPhoto(m.auteur);
+                const mavClass = ph ? 'msg-av' : 'msg-av ' + ac(m.auteur);
+                const mavContent = ph ? `<img src="${ph}">` : (m.auteur.charAt(0).toUpperCase());
+                html += `<div class="msg-grp${isMe ? ' me' : ''}">`;
+                if (!isMe) html += `<div class="${mavClass}">${mavContent}</div>`;
+                html += `<div class="msg-stack">`;
+                if (!isMe && (tab === 'grp' || tab === 'public')) html += `<div class="msg-author-lbl">${m.auteur}</div>`;
+            }
+            
+            if (m.vocal) {
+                html += renderVocalBubble(m);
+            } else {
+                html += `<div class="bubble">${m.texte || ''}</div>`;
+            }
+            
+            if (isLast) html += `<div class="btime">${t}</div>`;
+            prev = m;
+        }
+        html += '</div></div>';
+        area.innerHTML = html;
+        area.scrollTop = area.scrollHeight;
+        
+        // Mettre à jour la variable globale msgs
+        msgs = messages;
+        
+    } catch (err) {
+        console.error('❌ Erreur chargement messages:', err);
+        area.innerHTML = '<div class="empty-chat">Erreur de chargement</div>';
+    }
 }
 
 // ========== BADGE MESSAGES NON LUS ==========
