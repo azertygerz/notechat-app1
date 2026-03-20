@@ -1194,7 +1194,7 @@
 
 <script>
 // ============================================================
-// NOTECHAT - VERSION CORRIGÉE
+// NOTECHAT - VERSION AVEC RAFRAÎCHISSEMENT AUTOMATIQUE
 // ============================================================
 
 const API_URL = window.location.origin;
@@ -1543,8 +1543,10 @@ async function loadMsgs() {
     }
 }
 
-// ========== RAFRAÎCHISSEMENT AUTOMATIQUE ==========
-async function autoRefreshMessages() {
+// ========== RAFRAÎCHISSEMENT AUTOMATIQUE EN TEMPS RÉEL ==========
+let lastRefreshTime = 0;
+
+async function checkForNewMessages() {
     if (!me) return;
     if (tab !== 'prive' && tab !== 'grp' && tab !== 'public' && tab !== 'eph') return;
     if (!convId && tab !== 'public' && tab !== 'eph') return;
@@ -1566,14 +1568,13 @@ async function autoRefreshMessages() {
         const response = await fetch(url);
         const newMessages = await response.json();
         
-        if (newMessages.length !== msgs.length) {
-            console.log('🔄 Nouveaux messages détectés!', newMessages.length, 'vs', msgs.length);
+        // Comparer avec les messages actuels
+        if (JSON.stringify(newMessages) !== JSON.stringify(msgs)) {
+            console.log('🔄 Nouveaux messages détectés !');
             msgs = newMessages;
             await loadMsgs();
             
-            const area = document.getElementById('msgs-area');
-            if (area) area.scrollTop = area.scrollHeight;
-            
+            // Marquer comme lus
             newMessages.forEach(m => {
                 if (m.auteur !== me && !seen.includes(m.id)) {
                     seen.push(m.id);
@@ -1581,13 +1582,18 @@ async function autoRefreshMessages() {
             });
             localStorage.setItem('nc_seen_' + me, JSON.stringify(seen));
             badge();
+            
+            // Scroll en bas
+            const area = document.getElementById('msgs-area');
+            if (area) area.scrollTop = area.scrollHeight;
         }
     } catch (err) {
-        console.error('Erreur auto-refresh:', err);
+        console.error('Erreur check messages:', err);
     }
 }
 
-setInterval(autoRefreshMessages, 2000);
+// Vérifier toutes les 2 secondes
+setInterval(checkForNewMessages, 2000);
 
 // ========== BADGE MESSAGES NON LUS ==========
 function badge() {
@@ -2003,7 +2009,7 @@ function goCompteTab(t) {
     else if (t === 'notifs') renderNotifsInCompte(content);
 }
 
-// ========== PUBLICATIONS (version simplifiée) ==========
+// ========== PUBLICATIONS ==========
 function renderPubs(content) {
     const ph = getPhoto(me);
     const avHtml = ph ? `<div class="pub-form-av"><img src="${ph}"></div>` : `<div class="pub-form-av ${ac(me)}">${me.charAt(0).toUpperCase()}</div>`;
@@ -3098,6 +3104,5 @@ document.addEventListener('visibilitychange', () => {
         </div>
     </div>
 </div>
-
 </body>
 </html>
